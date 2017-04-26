@@ -1,3 +1,6 @@
+/*! \file mcea.cu
+  Main algorithm. Does all the memory management and starts the kernels.
+*/
 #include "cuda.h"
 
 // own header files
@@ -10,7 +13,14 @@
 #define PARAMS 50
 #define OBJS 3
 
+/*! \brief main kernel
 
+  This kernel runs the whole algorithm. All data structures have to be set up for this.
+  TODO: implement algorithm
+  \param population an array containing all parameters of the whole population.
+  \param objectives an array containing all objective values (there will be written some new ones)
+  \param utopia_vec a vector containing the best values for each single objective
+*/
 __global__ void mcea( float *population, float *objectives, float *utopia_vec ) {
   int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -21,6 +31,11 @@ __global__ void mcea( float *population, float *objectives, float *utopia_vec ) 
   return;
 }
 
+/*! \brief main function
+
+  Classic main function. It allocates all memory, generates the population, starts the kernel and collects the results.
+  All parameters changes are made via the #define statements
+*/
 int main() {
   // allocate memory
   float population_h[POP_SIZE][PARAMS];

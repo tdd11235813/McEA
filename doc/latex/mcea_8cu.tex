@@ -1,0 +1,74 @@
+\hypertarget{mcea_8cu}{}\section{mcea.\+cu File Reference}
+\label{mcea_8cu}\index{mcea.\+cu@{mcea.\+cu}}
+{\ttfamily \#include \char`\"{}cuda.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}error.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}util.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}dtlz.\+cuh\char`\"{}}\\*
+Include dependency graph for mcea.\+cu\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=244pt]{mcea_8cu__incl}
+\end{center}
+\end{figure}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define {\bfseries P\+O\+P\+\_\+\+W\+I\+D\+TH}~10\hypertarget{mcea_8cu_a078505a45e5598fe76de40d43e70e48a}{}\label{mcea_8cu_a078505a45e5598fe76de40d43e70e48a}
+
+\item 
+\#define {\bfseries P\+O\+P\+\_\+\+S\+I\+ZE}~((P\+O\+P\+\_\+\+W\+I\+D\+TH $\ast$ (P\+O\+P\+\_\+\+W\+I\+D\+TH + 1)) / 2)\hypertarget{mcea_8cu_aea5b3e4c9df97408e95b67cdf3f992fb}{}\label{mcea_8cu_aea5b3e4c9df97408e95b67cdf3f992fb}
+
+\item 
+\#define {\bfseries P\+A\+R\+A\+MS}~50\hypertarget{mcea_8cu_ab0b1e59d96396ba9dca2147f9feb44eb}{}\label{mcea_8cu_ab0b1e59d96396ba9dca2147f9feb44eb}
+
+\item 
+\#define {\bfseries O\+B\+JS}~3\hypertarget{mcea_8cu_ad15e0f6530352f2b65cb6147c597c61b}{}\label{mcea_8cu_ad15e0f6530352f2b65cb6147c597c61b}
+
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{mcea_8cu_a168f0a1a186e2d2fd41bef0cc0dd6c61}{mcea} (float $\ast$population, float $\ast$objectives, float $\ast$utopia\+\_\+vec)
+\begin{DoxyCompactList}\small\item\em main kernel \end{DoxyCompactList}\item 
+int \hyperlink{mcea_8cu_ae66f6b31b5ad750f1fe042a706a4e3d4}{main} ()
+\begin{DoxyCompactList}\small\item\em main function \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Main algorithm. Does all the memory management and starts the kernels. 
+
+\subsection{Function Documentation}
+\index{mcea.\+cu@{mcea.\+cu}!main@{main}}
+\index{main@{main}!mcea.\+cu@{mcea.\+cu}}
+\subsubsection[{\texorpdfstring{main()}{main()}}]{\setlength{\rightskip}{0pt plus 5cm}int main (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{mcea_8cu_ae66f6b31b5ad750f1fe042a706a4e3d4}{}\label{mcea_8cu_ae66f6b31b5ad750f1fe042a706a4e3d4}
+
+
+main function 
+
+Classic main function. It allocates all memory, generates the population, starts the kernel and collects the results. All parameters changes are made via the \#define statements \index{mcea.\+cu@{mcea.\+cu}!mcea@{mcea}}
+\index{mcea@{mcea}!mcea.\+cu@{mcea.\+cu}}
+\subsubsection[{\texorpdfstring{mcea(float $\ast$population, float $\ast$objectives, float $\ast$utopia\+\_\+vec)}{mcea(float *population, float *objectives, float *utopia_vec)}}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+global\+\_\+\+\_\+ void mcea (
+\begin{DoxyParamCaption}
+\item[{float $\ast$}]{population, }
+\item[{float $\ast$}]{objectives, }
+\item[{float $\ast$}]{utopia\+\_\+vec}
+\end{DoxyParamCaption}
+)}\hypertarget{mcea_8cu_a168f0a1a186e2d2fd41bef0cc0dd6c61}{}\label{mcea_8cu_a168f0a1a186e2d2fd41bef0cc0dd6c61}
+
+
+main kernel 
+
+This kernel runs the whole algorithm. All data structures have to be set up for this. T\+O\+DO\+: implement algorithm 
+\begin{DoxyParams}{Parameters}
+{\em population} & an array containing all parameters of the whole population. \\
+\hline
+{\em objectives} & an array containing all objective values (there will be written some new ones) \\
+\hline
+{\em utopia\+\_\+vec} & a vector containing the best values for each single objective \\
+\hline
+\end{DoxyParams}
