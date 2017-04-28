@@ -10,8 +10,8 @@
 
 #define POP_WIDTH 10
 #define POP_SIZE ((POP_WIDTH * (POP_WIDTH + 1)) / 2)
-#define PARAMS 50
-#define OBJS 3
+#define PARAMS 100
+#define OBJS 5
 
 /*! \brief main kernel
 
@@ -25,7 +25,7 @@ __global__ void mcea( float *population, float *objectives, float *utopia_vec ) 
   int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
   if( idx < POP_SIZE ) {
-    testObjSum( population+idx, objectives+idx, PARAMS, OBJS );
+    dtlz1( population+idx, objectives+idx, PARAMS, OBJS );
   }
 
   return;
@@ -53,20 +53,37 @@ int main() {
   srand( time( NULL ) );
   for (size_t i = 0; i < POP_SIZE; i++) {
     for (size_t j = 0; j < PARAMS; j++) {
-      population_h[i][j] = randomFloat();
+      //population_h[i][j] = randomFloat();
+      population_h[i][j] = 1.0 / (j+1);
     }
   }
 
   // copy data to GPU
   ERR( cudaMemcpy( population_d, population_h, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyHostToDevice ) );
 
+  // capture the start time
+  cudaEvent_t     start, stop;
+  ERR( cudaEventCreate( &start ) );
+  ERR( cudaEventCreate( &stop ) );
+  ERR( cudaEventRecord( start, 0 ) );
+
   // start the kernel
   mcea<<<1, POP_SIZE>>>( population_d, objectives_d, utopia_vec_d );
+
+  // get stop time, and display the timing results
+  ERR( cudaEventRecord( stop, 0 ) );
+  ERR( cudaEventSynchronize( stop ) );
+  float   elapsedTime;
+  ERR( cudaEventElapsedTime( &elapsedTime, start, stop ) );
+  printf( "Time to generate:  %f ms\n", elapsedTime );
 
   // copy data from GPU
   ERR( cudaMemcpy( population_h, population_d, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyDeviceToHost ) );
   ERR( cudaMemcpy( objectives_h, objectives_d, POP_SIZE * OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
   ERR( cudaMemcpy( utopia_vec_h, utopia_vec_d, OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
+
+  ERR( cudaEventDestroy( start ) );
+  ERR( cudaEventDestroy( stop ) );
 
   // print some solutions
   printVector( population_h[0], PARAMS );

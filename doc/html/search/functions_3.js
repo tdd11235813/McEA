@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['testobjsum',['testObjSum',['../dtlz_8cu.html#af665aa59f6d550787a3da256e11ca075',1,'dtlz.cu']]]
+  ['randomfloat',['randomFloat',['../util_8cu.html#a6861f8cdbc87ca6342c829824e9084e3',1,'util.cu']]]
 ];

@@ -2,7 +2,7 @@ var indexSectionsWithContent =
 {
   0: "dmprtu",
   1: "dmu",
-  2: "mprt"
+  2: "dmprt"
 };
 
 var indexSectionNames =
