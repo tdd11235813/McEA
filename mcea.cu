@@ -105,6 +105,7 @@ __device__ float weighted_fitness( float *objectives, int x, int y ) {
 */
 __global__ void mcea( float *population, float *objectives, float *utopia_vec, curandState *rng_state ) {
   float offspring[PARAMS];
+  float offspring_fit[OBJS];
 
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -115,7 +116,7 @@ __global__ void mcea( float *population, float *objectives, float *utopia_vec, c
     // ### evaluation ###
     dtlz1( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
 
-    // ### selection ###
+    // ### pairing ###
     // random neighbors
     int neighbor_1 = get_neighbor( x, y, rnd_uniform_int( rng_state + idx, N_WIDTH * N_WIDTH ) );
     int neighbor_2 = get_neighbor( x, y, rnd_uniform_int( rng_state + idx, N_WIDTH * N_WIDTH ) );
@@ -125,25 +126,28 @@ __global__ void mcea( float *population, float *objectives, float *utopia_vec, c
     float fit_2 = weighted_fitness( objectives + neighbor_2 * OBJS, x, y );
     int neighbor_sel = (fit_1 < fit_2)? neighbor_1 : neighbor_2;
 
-    if( idx == 0 )
+    if( idx == 99 )
       printf("x: %d, y: %d, n1: %3d(%.3f), n2: %3d(%.3f), sel: %3d\n", x, y, neighbor_1, fit_1, neighbor_2, fit_2, neighbor_sel);
 
-    if( idx == 0 ) {
+    if( idx == 99 ) {
       printf( "original: " );
       for (size_t i = 0; i < PARAMS; i++)
         printf( "%.2f, ", population[i + idx * PARAMS] );
+      printf( "\n" );
+      for (size_t i = 0; i < OBJS; i++)
+        printf( "%.2f, ", objectives[i + idx * OBJS] );
       printf( "\n" );
     }
     // ### crossover ###
     // == one-point crossover
     int x_over_point = rnd_uniform_int( rng_state + idx, PARAMS );
-    if( idx == 0 )
+    if( idx == 99 )
       printf( "xover: %d\n", x_over_point );
 
     for (size_t i = 0; i < PARAMS; i++)
       offspring[i] = (i<x_over_point) ? population[i + idx * PARAMS] : population[i + neighbor_sel * PARAMS];
 
-    if( idx == 0 ) {
+    if( idx == 99 ) {
       printf( "crossover: " );
       for (size_t i = 0; i < PARAMS; i++)
         printf( "%.2f, ", offspring[i] );
@@ -152,7 +156,7 @@ __global__ void mcea( float *population, float *objectives, float *utopia_vec, c
     // ### mutation ###
     // == uniform mutation
     int num_mutations = curand_poisson( rng_state + idx, LAMBDA );
-    if( idx == 0 )
+    if( idx == 99 )
       printf( "mut: %d\n", num_mutations );
 
     for (size_t i = 0; i < num_mutations; i++) {
@@ -160,12 +164,48 @@ __global__ void mcea( float *population, float *objectives, float *utopia_vec, c
       offspring[mut_location] = curand_uniform( rng_state + idx );
     }
 
-    if( idx == 0 ) {
+    if( idx == 99 ) {
       printf( "mutated: " );
       for (size_t i = 0; i < PARAMS; i++)
         printf( "%.2f, ", offspring[i] );
       printf( "\n" );
     }
+
+    // ### selection ###
+    // == select if better
+
+    // evaluate the offspring
+    dtlz1( offspring, offspring_fit, PARAMS, OBJS );
+
+    if( idx == 99 ) {
+      printf( "offspring fit: " );
+      for (size_t i = 0; i < OBJS; i++)
+        printf( "%.2f, ", offspring_fit[i] );
+      printf( "\n" );
+    }
+
+    // compare and copy
+    fit_1 = weighted_fitness( objectives + idx * OBJS, x, y );
+    fit_2 = weighted_fitness( offspring_fit, x, y );
+
+    if(fit_2 < fit_1) {
+      for (size_t i = 0; i < PARAMS; i++)
+        population[i + idx * PARAMS] = offspring[i];
+      for (size_t i = 0; i < OBJS; i++)
+        objectives[i + idx * OBJS] = offspring_fit[i];
+    }
+
+    if( idx == 99 ) {
+      printf( "new ind: " );
+      for (size_t i = 0; i < PARAMS; i++)
+        printf( "%.2f, ", population[i + idx * PARAMS] );
+      printf( "\n" );
+      for (size_t i = 0; i < OBJS; i++)
+        printf( "%.2f, ", objectives[i + idx * OBJS] );
+      printf( "\n" );
+    }
+
+    __syncthreads();
   }
 
   return;
