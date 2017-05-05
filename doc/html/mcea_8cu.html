@@ -87,6 +87,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &quot;cuda.h&quot;</code><br />
+<code>#include &lt;curand.h&gt;</code><br />
+<code>#include &lt;curand_kernel.h&gt;</code><br />
+<code>#include &lt;math.h&gt;</code><br />
 <code>#include &quot;error.h&quot;</code><br />
 <code>#include &quot;util.h&quot;</code><br />
 <code>#include &quot;dtlz.cuh&quot;</code><br />
@@ -95,8 +98,8 @@ Include dependency graph for mcea.cu:</div>
 <div class="dyncontent">
 <div class="center"><img src="mcea_8cu__incl.png" border="0" usemap="#mcea_8cu" alt=""/></div>
 <map name="mcea_8cu" id="mcea_8cu">
-<area shape="rect" id="node3" href="error_8h_source.html" title="error.h" alt="" coords="91,80,149,107"/>
-<area shape="rect" id="node5" href="util_8h_source.html" title="util.h" alt="" coords="173,80,224,107"/>
+<area shape="rect" id="node6" href="error_8h_source.html" title="error.h" alt="" coords="413,80,472,107"/>
+<area shape="rect" id="node8" href="util_8h_source.html" title="util.h" alt="" coords="496,80,547,107"/>
 </map>
 </div>
 </div><table class="memberdecls">
@@ -106,20 +109,44 @@ Macros</h2></td></tr>
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>POP_WIDTH</b>&#160;&#160;&#160;10</td></tr>
 <tr class="separator:a078505a45e5598fe76de40d43e70e48a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea5b3e4c9df97408e95b67cdf3f992fb"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aea5b3e4c9df97408e95b67cdf3f992fb"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>POP_SIZE</b>&#160;&#160;&#160;((POP_WIDTH * (POP_WIDTH + 1)) / 2)</td></tr>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>POP_SIZE</b>&#160;&#160;&#160;(POP_WIDTH * (POP_WIDTH + 1))</td></tr>
 <tr class="separator:aea5b3e4c9df97408e95b67cdf3f992fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0b1e59d96396ba9dca2147f9feb44eb"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab0b1e59d96396ba9dca2147f9feb44eb"></a>
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>PARAMS</b>&#160;&#160;&#160;100</td></tr>
 <tr class="separator:ab0b1e59d96396ba9dca2147f9feb44eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad15e0f6530352f2b65cb6147c597c61b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad15e0f6530352f2b65cb6147c597c61b"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>OBJS</b>&#160;&#160;&#160;5</td></tr>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>OBJS</b>&#160;&#160;&#160;3</td></tr>
 <tr class="separator:ad15e0f6530352f2b65cb6147c597c61b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1b387c96005508188bcbe44b4c431b84"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1b387c96005508188bcbe44b4c431b84"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>N_RAD</b>&#160;&#160;&#160;1</td></tr>
+<tr class="separator:a1b387c96005508188bcbe44b4c431b84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a319e72f5bf1ed96ebb2d7d034be66cbe"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a319e72f5bf1ed96ebb2d7d034be66cbe"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>N_WIDTH</b>&#160;&#160;&#160;(2 * N_RAD + 1)</td></tr>
+<tr class="separator:a319e72f5bf1ed96ebb2d7d034be66cbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9388d332cfa4e6dc24e4fd7c33a35f17"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9388d332cfa4e6dc24e4fd7c33a35f17"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>P_MUT</b>&#160;&#160;&#160;0.01</td></tr>
+<tr class="separator:a9388d332cfa4e6dc24e4fd7c33a35f17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a738607799d6938e1b15f463688029cd5"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a738607799d6938e1b15f463688029cd5"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>LAMBDA</b>&#160;&#160;&#160;(P_MUT * PARAMS)</td></tr>
+<tr class="separator:a738607799d6938e1b15f463688029cd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a168f0a1a186e2d2fd41bef0cc0dd6c61"><td class="memItemLeft" align="right" valign="top">__global__ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="mcea_8cu.html#a168f0a1a186e2d2fd41bef0cc0dd6c61">mcea</a> (float *population, float *objectives, float *utopia_vec)</td></tr>
-<tr class="memdesc:a168f0a1a186e2d2fd41bef0cc0dd6c61"><td class="mdescLeft">&#160;</td><td class="mdescRight">main kernel  <a href="#a168f0a1a186e2d2fd41bef0cc0dd6c61">More...</a><br /></td></tr>
-<tr class="separator:a168f0a1a186e2d2fd41bef0cc0dd6c61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acab27e83eac8a2ce0b5e36cbaa955669"><td class="memItemLeft" align="right" valign="top">__device__ int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="mcea_8cu.html#acab27e83eac8a2ce0b5e36cbaa955669">get_neighbor</a> (int x, int y, int neighbor_index)</td></tr>
+<tr class="memdesc:acab27e83eac8a2ce0b5e36cbaa955669"><td class="mdescLeft">&#160;</td><td class="mdescRight">neighbor calculation  <a href="#acab27e83eac8a2ce0b5e36cbaa955669">More...</a><br /></td></tr>
+<tr class="separator:acab27e83eac8a2ce0b5e36cbaa955669"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b010aff6f775f55f906e1e4c6fa34e1"><td class="memItemLeft" align="right" valign="top">__global__ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="mcea_8cu.html#a5b010aff6f775f55f906e1e4c6fa34e1">rand_init</a> (curandState *state)</td></tr>
+<tr class="memdesc:a5b010aff6f775f55f906e1e4c6fa34e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">init PRNG  <a href="#a5b010aff6f775f55f906e1e4c6fa34e1">More...</a><br /></td></tr>
+<tr class="separator:a5b010aff6f775f55f906e1e4c6fa34e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0a71eeba147eeb4f476dd3a68ad324c"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="af0a71eeba147eeb4f476dd3a68ad324c"></a>
+__device__ int&#160;</td><td class="memItemRight" valign="bottom"><b>rnd_uniform_int</b> (curandState *state, int values)</td></tr>
+<tr class="separator:af0a71eeba147eeb4f476dd3a68ad324c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fa12716231f41a58666437c0a1f3afc"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a0fa12716231f41a58666437c0a1f3afc"></a>
+__device__ float&#160;</td><td class="memItemRight" valign="bottom"><b>weighted_fitness</b> (float *objectives, int x, int y)</td></tr>
+<tr class="separator:a0fa12716231f41a58666437c0a1f3afc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31aedf86c33864d451f800c41c881afa"><td class="memItemLeft" align="right" valign="top">__global__ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="mcea_8cu.html#a31aedf86c33864d451f800c41c881afa">mcea</a> (float *population, float *objectives, float *utopia_vec, curandState *rng_state)</td></tr>
+<tr class="memdesc:a31aedf86c33864d451f800c41c881afa"><td class="mdescLeft">&#160;</td><td class="mdescRight">main kernel  <a href="#a31aedf86c33864d451f800c41c881afa">More...</a><br /></td></tr>
+<tr class="separator:a31aedf86c33864d451f800c41c881afa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae66f6b31b5ad750f1fe042a706a4e3d4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="mcea_8cu.html#ae66f6b31b5ad750f1fe042a706a4e3d4">main</a> ()</td></tr>
 <tr class="memdesc:ae66f6b31b5ad750f1fe042a706a4e3d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">main function  <a href="#ae66f6b31b5ad750f1fe042a706a4e3d4">More...</a><br /></td></tr>
 <tr class="separator:ae66f6b31b5ad750f1fe042a706a4e3d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -127,6 +154,49 @@ Functions</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Main algorithm. Does all the memory management and starts the kernels. </p>
 </div><h2 class="groupheader">Function Documentation</h2>
+<a class="anchor" id="acab27e83eac8a2ce0b5e36cbaa955669"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">__device__ int get_neighbor </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>neighbor_index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>neighbor calculation </p>
+<p>For a given neighbor index this calculates the neighbors global position realtive to the original individual. The neighbor index is a number representing the position of the neighbor in the neighborhood of the individual. It is organized rowwise starting at the top-left individual in the neighborhood (index = 0). When there is an overflow in any of the directions, the global index will be wrapped around to the other side of the population.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>the x position of the original individual </td></tr>
+    <tr><td class="paramname">y</td><td>the y position of the original individual </td></tr>
+    <tr><td class="paramname">neighbor_index</td><td>the position of the neighbor relative to the original. Allowed values depend on the population size. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a class="anchor" id="ae66f6b31b5ad750f1fe042a706a4e3d4"></a>
 <div class="memitem">
 <div class="memproto">
@@ -145,7 +215,7 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="a168f0a1a186e2d2fd41bef0cc0dd6c61"></a>
+<a class="anchor" id="a31aedf86c33864d451f800c41c881afa"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -165,7 +235,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">float *&#160;</td>
-          <td class="paramname"><em>utopia_vec</em>&#160;</td>
+          <td class="paramname"><em>utopia_vec</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">curandState *&#160;</td>
+          <td class="paramname"><em>rng_state</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -181,6 +257,33 @@ Functions</h2></td></tr>
     <tr><td class="paramname">population</td><td>an array containing all parameters of the whole population. </td></tr>
     <tr><td class="paramname">objectives</td><td>an array containing all objective values (there will be written some new ones) </td></tr>
     <tr><td class="paramname">utopia_vec</td><td>a vector containing the best values for each single objective </td></tr>
+    <tr><td class="paramname">rng_state</td><td>the initialized state of the PRNG to use </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="a5b010aff6f775f55f906e1e4c6fa34e1"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">__global__ void rand_init </td>
+          <td>(</td>
+          <td class="paramtype">curandState *&#160;</td>
+          <td class="paramname"><em>state</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>init PRNG </p>
+<p>Initializes the pseudo random number generator.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">state</td><td>the data structure for the RNG state </td></tr>
+    <tr><td class="paramname">seed</td><td>the seed with which to init the RNG </td></tr>
   </table>
   </dd>
 </dl>

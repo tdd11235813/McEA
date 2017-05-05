@@ -17,6 +17,8 @@
 #define OBJS 3
 #define N_RAD 1
 #define N_WIDTH (2 * N_RAD + 1)
+#define P_MUT 0.01
+#define LAMBDA (P_MUT * PARAMS)
 
 /*! \brief neighbor calculation
 
@@ -125,20 +127,43 @@ __global__ void mcea( float *population, float *objectives, float *utopia_vec, c
 
     if( idx == 0 )
       printf("x: %d, y: %d, n1: %3d(%.3f), n2: %3d(%.3f), sel: %3d\n", x, y, neighbor_1, fit_1, neighbor_2, fit_2, neighbor_sel);
+
+    if( idx == 0 ) {
+      printf( "original: " );
+      for (size_t i = 0; i < PARAMS; i++)
+        printf( "%.2f, ", population[i + idx * PARAMS] );
+      printf( "\n" );
+    }
     // ### crossover ###
     // == one-point crossover
     int x_over_point = rnd_uniform_int( rng_state + idx, PARAMS );
+    if( idx == 0 )
+      printf( "xover: %d\n", x_over_point );
 
     for (size_t i = 0; i < PARAMS; i++)
       offspring[i] = (i<x_over_point) ? population[i + idx * PARAMS] : population[i + neighbor_sel * PARAMS];
 
+    if( idx == 0 ) {
+      printf( "crossover: " );
+      for (size_t i = 0; i < PARAMS; i++)
+        printf( "%.2f, ", offspring[i] );
+      printf( "\n" );
+    }
     // ### mutation ###
-    // == uniform crossover
+    // == uniform mutation
+    int num_mutations = curand_poisson( rng_state + idx, LAMBDA );
+    if( idx == 0 )
+      printf( "mut: %d\n", num_mutations );
 
+    for (size_t i = 0; i < num_mutations; i++) {
+      int mut_location = rnd_uniform_int( rng_state + idx, PARAMS );
+      offspring[mut_location] = curand_uniform( rng_state + idx );
+    }
 
     if( idx == 0 ) {
+      printf( "mutated: " );
       for (size_t i = 0; i < PARAMS; i++)
-        printf( "%f, ", offspring[i] );
+        printf( "%.2f, ", offspring[i] );
       printf( "\n" );
     }
   }
@@ -173,8 +198,8 @@ int main() {
   srand( time( NULL ) );
   for (size_t i = 0; i < POP_SIZE; i++) {
     for (size_t j = 0; j < PARAMS; j++) {
-      //population_h[i][j] = randomFloat();
-      population_h[i][j] = (float)i;
+      population_h[i][j] = randomFloat();
+      //population_h[i][j] = ((float)i)/PARAMS;
     }
   }
 
