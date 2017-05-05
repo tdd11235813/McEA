@@ -61,7 +61,7 @@ __global__ void rand_init( curandState *state ) {
 */
 __device__ int rnd_uniform_int( curandState *state, int values ) {
 
-    return (int)truncf( curand_uniform( state ) * ( N_WIDTH * N_WIDTH - 0.000001) );
+    return (int)truncf( curand_uniform( state ) * ( values - 0.000001) );
 }
 
 /* \brief calculates the weighted fitness
@@ -102,13 +102,16 @@ __device__ float weighted_fitness( float *objectives, int x, int y ) {
   \param rng_state the initialized state of the PRNG to use
 */
 __global__ void mcea( float *population, float *objectives, float *utopia_vec, curandState *rng_state ) {
+  float offspring[PARAMS];
+
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
   int idx = x + y * (POP_WIDTH + 1);
 
+
   if( idx < POP_SIZE ) {
     // ### evaluation ###
-    dtlz1( population+idx, objectives+idx, PARAMS, OBJS );
+    dtlz1( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
 
     // ### selection ###
     // random neighbors
@@ -116,14 +119,28 @@ __global__ void mcea( float *population, float *objectives, float *utopia_vec, c
     int neighbor_2 = get_neighbor( x, y, rnd_uniform_int( rng_state + idx, N_WIDTH * N_WIDTH ) );
 
     // compare neighbors
-    float dummy[3] = {1.0, 1.0, 1.0};
-    float fit_1 = weighted_fitness( dummy, x, y );
-    float fit_2 = weighted_fitness( dummy, x, y );
-    // float fit_1 = weighted_fitness( objectives + neighbor_1 * OBJS, x, y );
-    // float fit_2 = weighted_fitness( objectives + neighbor_2 * OBJS, x, y );
+    float fit_1 = weighted_fitness( objectives + neighbor_1 * OBJS, x, y );
+    float fit_2 = weighted_fitness( objectives + neighbor_2 * OBJS, x, y );
     int neighbor_sel = (fit_1 < fit_2)? neighbor_1 : neighbor_2;
 
-    printf("x: %d, y: %d, n1: %3d(%.3f), n2: %3d(%.3f), sel: %3d\n", x, y, neighbor_1, fit_1, neighbor_2, fit_2, neighbor_sel);
+    if( idx == 0 )
+      printf("x: %d, y: %d, n1: %3d(%.3f), n2: %3d(%.3f), sel: %3d\n", x, y, neighbor_1, fit_1, neighbor_2, fit_2, neighbor_sel);
+    // ### crossover ###
+    // == one-point crossover
+    int x_over_point = rnd_uniform_int( rng_state + idx, PARAMS );
+
+    for (size_t i = 0; i < PARAMS; i++)
+      offspring[i] = (i<x_over_point) ? population[i + idx * PARAMS] : population[i + neighbor_sel * PARAMS];
+
+    // ### mutation ###
+    // == uniform crossover
+
+
+    if( idx == 0 ) {
+      for (size_t i = 0; i < PARAMS; i++)
+        printf( "%f, ", offspring[i] );
+      printf( "\n" );
+    }
   }
 
   return;
@@ -156,8 +173,8 @@ int main() {
   srand( time( NULL ) );
   for (size_t i = 0; i < POP_SIZE; i++) {
     for (size_t j = 0; j < PARAMS; j++) {
-      population_h[i][j] = randomFloat();
-      // population_h[i][j] = 1.0 / (j+1);
+      //population_h[i][j] = randomFloat();
+      population_h[i][j] = (float)i;
     }
   }
 
