@@ -12,7 +12,7 @@
 #include "dtlz.cuh"
 
 // number of generations that the alg. performs
-#define GENERATIONS 100
+#define GENERATIONS 1000
 // the y-size of the population grid (in individuals)
 #define POP_WIDTH 1000
 // the total number of individuals in the population
@@ -20,7 +20,7 @@
 #define POP_SIZE (POP_WIDTH * (POP_WIDTH + 1))
 // the number of parameters for the optimization problen (DTLZ-n)
 // can be adjusted at will, scales the memory usage linearly
-#define PARAMS 100
+#define PARAMS 20
 // the number of optimization globals
 // ! don't change this for now (weight calculation is hard coded)
 #define OBJS 3
@@ -39,14 +39,16 @@
 
 /*! \brief neighbor calculation
 
-  For a given neighbor index this calculates the neighbors global position realtive to the original individual.
+  For a given neighbor index this calculates the neighbors global position.
   The neighbor index is a number representing the position of the neighbor in the neighborhood of the individual.
   It is organized rowwise starting at the top-left individual in the neighborhood (index = 0). When there is an
   overflow in any of the directions, the global index will be wrapped around to the other side of the population.
 
-  \param x the x position of the original individual
-  \param y the y position of the original individual
-  \param neighbor_index the position of the neighbor relative to the original. Allowed values depend on the population size.
+  \param[in] x the x position of the original individual
+  \param[in] y the y position of the original individual
+  \param[in] neighbor_index the position of the neighbor relative to the original. Allowed values depend on the population size.
+
+  \return the global index of the neighbor
 */
 __device__ int get_neighbor(int x, int y, int neighbor_index) {
   // 2D indices
@@ -61,8 +63,9 @@ __device__ int get_neighbor(int x, int y, int neighbor_index) {
 
 Initializes the pseudo random number generator.
 
-\param state the data structure for the RNG state
-\param seed the seed with which to init the RNG
+\param[out] state the data structure for the PRNG state
+
+\return nothing
 */
 __global__ void rand_init( curandState *state ) {
   int idx = threadIdx.x+blockDim.x*blockIdx.x;
@@ -75,8 +78,10 @@ __global__ void rand_init( curandState *state ) {
 
   Draws from a uniform distribution in [0, 1] and converts it to an integer in the range [0, values-1].
 
-  \param state the PRNG state to use
-  \param values the number of possible values for the uniform distribution
+  \param state[in] the PRNG state to use
+  \param values[in] the number of possible values for the uniform distribution
+
+  \return an integer in the specified range
 */
 __device__ int rnd_uniform_int( curandState *state, int values ) {
 
@@ -90,9 +95,11 @@ The specific weights for the individual at location x,y in the population are us
 ! This only works for 3 objectives for now !
 TODO: for real world problems use the weighted tchebychev method (use utopia vector)
 
-\param objectives pointer to the objective values of the individual
-\param x the x location of the weighting basis (does not have to be the same ind the objectives are from)
-\param y the y location of the weighting basis (does not have to be the same ind the objectives are from)
+\param[in] objectives pointer to the objective values of the individual
+\param[in] x the x location of the weighting basis (does not have to be the same ind the objectives are from)
+\param[in] y the y location of the weighting basis (does not have to be the same ind the objectives are from)
+
+\return the weighted fitness value
 */
 __device__ float weighted_fitness( float *objectives, int x, int y ) {
   // this decides if the individual is on the mirrored side of the population
@@ -111,14 +118,15 @@ __device__ float weighted_fitness( float *objectives, int x, int y ) {
 
 }
 
-/*! \brief main kernel
+/*! \brief McEA kernel
 
   This kernel runs the whole algorithm. All data structures have to be set up prior to this.
+  It uses the population and performs GENERATIONS generations, consisting of pairing, crossover, mutation, evaluation, and selection on it.
+  At the end the population contains the optimized individuals.
 
-
-  \param population an array containing all parameters of the whole population.
-  \param objectives an array containing all objective values (there will be written some new ones)
-  \param rng_state the initialized state of the PRNG to use
+  \param[in,out] population an array containing all parameters of the whole population.
+  \param[in,out] objectives an array containing all objective values (there will be written some new ones)
+  \param[in] rng_state the initialized state of the PRNG to use
 */
 __global__ void mcea( float *population, float *objectives, curandState *rng_state ) {
   float offspring[PARAMS];
@@ -235,14 +243,13 @@ __global__ void mcea( float *population, float *objectives, curandState *rng_sta
 /*! \brief main function
 
   Classic main function. It allocates all memory, generates the population, starts the kernel and collects the results.
-  All parameters changes are made via the #define statements
+  All parameter changes are made via the #define statements
 */
 int main() {
-  printf("starting.\n");
 
   // allocate memory
-  float *population_h = (float *)malloc( POP_SIZE * PARAMS *sizeof(float) );
-  float *objectives_h = (float *)malloc(  POP_SIZE * OBJS * sizeof(float) );
+  float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
+  float *objectives_h = (float *)malloc( POP_SIZE * OBJS * sizeof(float) );
   float *population_d;
   float *objectives_d;
 
@@ -251,12 +258,8 @@ int main() {
   ERR( cudaMalloc( (void**)&population_d, POP_SIZE * PARAMS * sizeof(float) ) );
   ERR( cudaMalloc( (void**)&objectives_d, POP_SIZE * OBJS * sizeof(float) ) );
 
-  printf("allocation ready.\n");
-
   // setup random generator
   rand_init<<<1, POP_SIZE>>>( d_state );
-
-  printf("PRNG ready.\n");
 
   // create random population
   srand( time( NULL ) );
@@ -267,12 +270,8 @@ int main() {
     }
   }
 
-  printf("population init ready.\n");
-
   // copy data to GPU
   ERR( cudaMemcpy( population_d, population_h, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyHostToDevice ) );
-
-  printf("data copy ready.\n");
 
   // capture the start time
   cudaEvent_t     start, stop;
@@ -283,10 +282,7 @@ int main() {
   // start the kernel
   dim3 dimBlock(32, 32);
   dim3 dimGrid((POP_WIDTH + 1) / 32 + 1, POP_WIDTH / 32 + 1);
-  printf("grid: %d, %d; block: %d, %d\n", dimGrid.x, dimGrid.y, dimBlock.x, dimBlock.y);
   mcea<<<dimGrid, dimBlock>>>( population_d, objectives_d, d_state );
-
-  printf("kernel ready\n");
 
   // get stop time, and display the timing results
   ERR( cudaEventRecord( stop, 0 ) );
@@ -299,10 +295,14 @@ int main() {
   ERR( cudaMemcpy( population_h, population_d, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyDeviceToHost ) );
   ERR( cudaMemcpy( objectives_h, objectives_d, POP_SIZE * OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
 
+  // search the minima
+  float min_sum = get_objective_sum( objectives_h, POP_SIZE, OBJS );
+  printf("min sum: %.2f\n", min_sum);
+
+  // free resources
   ERR( cudaEventDestroy( start ) );
   ERR( cudaEventDestroy( stop ) );
 
-  // free resources
   ERR( cudaFree( population_d ) );
   ERR( cudaFree( objectives_d ) );
 }
