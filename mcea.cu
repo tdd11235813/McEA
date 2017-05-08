@@ -11,14 +11,31 @@
 #include "util.h"
 #include "dtlz.cuh"
 
-#define POP_WIDTH 10
+// number of generations that the alg. performs
+#define GENERATIONS 100
+// the y-size of the population grid (in individuals)
+#define POP_WIDTH 1000
+// the total number of individuals in the population
+// the x-size is bigger than the y-size by 1 because of the topology
 #define POP_SIZE (POP_WIDTH * (POP_WIDTH + 1))
+// the number of parameters for the optimization problen (DTLZ-n)
+// can be adjusted at will, scales the memory usage linearly
 #define PARAMS 100
+// the number of optimization globals
+// ! don't change this for now (weight calculation is hard coded)
 #define OBJS 3
+// the radius of the neighborhood around an individual
+// the neighborhood is square at all times
 #define N_RAD 1
+// the width of the neighborhood around an individual
 #define N_WIDTH (2 * N_RAD + 1)
+// the probability of mutating a gene in 1 generation in 1 individual
 #define P_MUT 0.01
+// lambda for the poisson distribution of the mutation
 #define LAMBDA (P_MUT * PARAMS)
+// if true it writes the evolution of individual 0 in the population
+// don't use this with a big number of GENERATIONS
+#define VERBOSE false
 
 /*! \brief neighbor calculation
 
@@ -96,14 +113,14 @@ __device__ float weighted_fitness( float *objectives, int x, int y ) {
 
 /*! \brief main kernel
 
-  This kernel runs the whole algorithm. All data structures have to be set up for this.
-  TODO: implement algorithm
+  This kernel runs the whole algorithm. All data structures have to be set up prior to this.
+
+
   \param population an array containing all parameters of the whole population.
   \param objectives an array containing all objective values (there will be written some new ones)
-  \param utopia_vec a vector containing the best values for each single objective
   \param rng_state the initialized state of the PRNG to use
 */
-__global__ void mcea( float *population, float *objectives, float *utopia_vec, curandState *rng_state ) {
+__global__ void mcea( float *population, float *objectives, curandState *rng_state ) {
   float offspring[PARAMS];
   float offspring_fit[OBJS];
 
@@ -112,100 +129,104 @@ __global__ void mcea( float *population, float *objectives, float *utopia_vec, c
   int idx = x + y * (POP_WIDTH + 1);
 
 
-  if( idx < POP_SIZE ) {
+  if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {
     // ### evaluation ###
     dtlz1( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
 
-    // ### pairing ###
-    // random neighbors
-    int neighbor_1 = get_neighbor( x, y, rnd_uniform_int( rng_state + idx, N_WIDTH * N_WIDTH ) );
-    int neighbor_2 = get_neighbor( x, y, rnd_uniform_int( rng_state + idx, N_WIDTH * N_WIDTH ) );
+    // main loop
+    for (size_t g = 0; g < GENERATIONS; g++) {
 
-    // compare neighbors
-    float fit_1 = weighted_fitness( objectives + neighbor_1 * OBJS, x, y );
-    float fit_2 = weighted_fitness( objectives + neighbor_2 * OBJS, x, y );
-    int neighbor_sel = (fit_1 < fit_2)? neighbor_1 : neighbor_2;
+      // ### pairing ###
+      // random neighbors
+      int neighbor_1 = get_neighbor( x, y, rnd_uniform_int( rng_state + idx, N_WIDTH * N_WIDTH ) );
+      int neighbor_2 = get_neighbor( x, y, rnd_uniform_int( rng_state + idx, N_WIDTH * N_WIDTH ) );
 
-    if( idx == 99 )
-      printf("x: %d, y: %d, n1: %3d(%.3f), n2: %3d(%.3f), sel: %3d\n", x, y, neighbor_1, fit_1, neighbor_2, fit_2, neighbor_sel);
+      // compare neighbors
+      float fit_1 = weighted_fitness( objectives + neighbor_1 * OBJS, x, y );
+      float fit_2 = weighted_fitness( objectives + neighbor_2 * OBJS, x, y );
+      int neighbor_sel = (fit_1 < fit_2)? neighbor_1 : neighbor_2;
 
-    if( idx == 99 ) {
-      printf( "original: " );
+      if( idx == 0 && VERBOSE )
+        printf("x: %d, y: %d, n1: %3d(%.3f), n2: %3d(%.3f), sel: %3d\n", x, y, neighbor_1, fit_1, neighbor_2, fit_2, neighbor_sel);
+
+      if( idx == 0 && VERBOSE ) {
+        printf( "original: " );
+        for (size_t i = 0; i < PARAMS; i++)
+          printf( "%.2f, ", population[i + idx * PARAMS] );
+        printf( "\n" );
+        for (size_t i = 0; i < OBJS; i++)
+          printf( "%.2f, ", objectives[i + idx * OBJS] );
+        printf( "\n" );
+      }
+      // ### crossover ###
+      // == one-point crossover
+      int x_over_point = rnd_uniform_int( rng_state + idx, PARAMS );
+      if( idx == 0 && VERBOSE )
+        printf( "xover: %d\n", x_over_point );
+
       for (size_t i = 0; i < PARAMS; i++)
-        printf( "%.2f, ", population[i + idx * PARAMS] );
-      printf( "\n" );
-      for (size_t i = 0; i < OBJS; i++)
-        printf( "%.2f, ", objectives[i + idx * OBJS] );
-      printf( "\n" );
+        offspring[i] = (i<x_over_point) ? population[i + idx * PARAMS] : population[i + neighbor_sel * PARAMS];
+
+      if( idx == 0 && VERBOSE ) {
+        printf( "crossover: " );
+        for (size_t i = 0; i < PARAMS; i++)
+          printf( "%.2f, ", offspring[i] );
+        printf( "\n" );
+      }
+      // ### mutation ###
+      // == uniform mutation
+      int num_mutations = curand_poisson( rng_state + idx, LAMBDA );
+      if( idx == 0 && VERBOSE )
+        printf( "mut: %d\n", num_mutations );
+
+      for (size_t i = 0; i < num_mutations; i++) {
+        int mut_location = rnd_uniform_int( rng_state + idx, PARAMS );
+        offspring[mut_location] = curand_uniform( rng_state + idx );
+      }
+
+      if( idx == 0 && VERBOSE ) {
+        printf( "mutated: " );
+        for (size_t i = 0; i < PARAMS; i++)
+          printf( "%.2f, ", offspring[i] );
+        printf( "\n" );
+      }
+
+      // ### selection ###
+      // == select if better
+
+      // evaluate the offspring
+      dtlz1( offspring, offspring_fit, PARAMS, OBJS );
+
+      if( idx == 0 && VERBOSE ) {
+        printf( "offspring fit: " );
+        for (size_t i = 0; i < OBJS; i++)
+          printf( "%.2f, ", offspring_fit[i] );
+        printf( "\n" );
+      }
+
+      // compare and copy
+      fit_1 = weighted_fitness( objectives + idx * OBJS, x, y );
+      fit_2 = weighted_fitness( offspring_fit, x, y );
+
+      if(fit_2 < fit_1) {
+        for (size_t i = 0; i < PARAMS; i++)
+          population[i + idx * PARAMS] = offspring[i];
+        for (size_t i = 0; i < OBJS; i++)
+          objectives[i + idx * OBJS] = offspring_fit[i];
+      }
+
+      if( idx == 0 && VERBOSE ) {
+        printf( "new ind: " );
+        for (size_t i = 0; i < PARAMS; i++)
+          printf( "%.2f, ", population[i + idx * PARAMS] );
+        printf( "\n" );
+        for (size_t i = 0; i < OBJS; i++)
+          printf( "%.2f, ", objectives[i + idx * OBJS] );
+        printf( "\n" );
+      }
+
+      __syncthreads();
     }
-    // ### crossover ###
-    // == one-point crossover
-    int x_over_point = rnd_uniform_int( rng_state + idx, PARAMS );
-    if( idx == 99 )
-      printf( "xover: %d\n", x_over_point );
-
-    for (size_t i = 0; i < PARAMS; i++)
-      offspring[i] = (i<x_over_point) ? population[i + idx * PARAMS] : population[i + neighbor_sel * PARAMS];
-
-    if( idx == 99 ) {
-      printf( "crossover: " );
-      for (size_t i = 0; i < PARAMS; i++)
-        printf( "%.2f, ", offspring[i] );
-      printf( "\n" );
-    }
-    // ### mutation ###
-    // == uniform mutation
-    int num_mutations = curand_poisson( rng_state + idx, LAMBDA );
-    if( idx == 99 )
-      printf( "mut: %d\n", num_mutations );
-
-    for (size_t i = 0; i < num_mutations; i++) {
-      int mut_location = rnd_uniform_int( rng_state + idx, PARAMS );
-      offspring[mut_location] = curand_uniform( rng_state + idx );
-    }
-
-    if( idx == 99 ) {
-      printf( "mutated: " );
-      for (size_t i = 0; i < PARAMS; i++)
-        printf( "%.2f, ", offspring[i] );
-      printf( "\n" );
-    }
-
-    // ### selection ###
-    // == select if better
-
-    // evaluate the offspring
-    dtlz1( offspring, offspring_fit, PARAMS, OBJS );
-
-    if( idx == 99 ) {
-      printf( "offspring fit: " );
-      for (size_t i = 0; i < OBJS; i++)
-        printf( "%.2f, ", offspring_fit[i] );
-      printf( "\n" );
-    }
-
-    // compare and copy
-    fit_1 = weighted_fitness( objectives + idx * OBJS, x, y );
-    fit_2 = weighted_fitness( offspring_fit, x, y );
-
-    if(fit_2 < fit_1) {
-      for (size_t i = 0; i < PARAMS; i++)
-        population[i + idx * PARAMS] = offspring[i];
-      for (size_t i = 0; i < OBJS; i++)
-        objectives[i + idx * OBJS] = offspring_fit[i];
-    }
-
-    if( idx == 99 ) {
-      printf( "new ind: " );
-      for (size_t i = 0; i < PARAMS; i++)
-        printf( "%.2f, ", population[i + idx * PARAMS] );
-      printf( "\n" );
-      for (size_t i = 0; i < OBJS; i++)
-        printf( "%.2f, ", objectives[i + idx * OBJS] );
-      printf( "\n" );
-    }
-
-    __syncthreads();
   }
 
   return;
@@ -217,34 +238,41 @@ __global__ void mcea( float *population, float *objectives, float *utopia_vec, c
   All parameters changes are made via the #define statements
 */
 int main() {
+  printf("starting.\n");
+
   // allocate memory
-  float population_h[POP_SIZE][PARAMS];
-  float objectives_h[POP_SIZE][OBJS];
-  float utopia_vec_h[OBJS];
+  float *population_h = (float *)malloc( POP_SIZE * PARAMS *sizeof(float) );
+  float *objectives_h = (float *)malloc(  POP_SIZE * OBJS * sizeof(float) );
   float *population_d;
   float *objectives_d;
-  float *utopia_vec_d;
 
   curandState *d_state;
   ERR( cudaMalloc( &d_state, POP_SIZE * sizeof(curandState) ) );
   ERR( cudaMalloc( (void**)&population_d, POP_SIZE * PARAMS * sizeof(float) ) );
   ERR( cudaMalloc( (void**)&objectives_d, POP_SIZE * OBJS * sizeof(float) ) );
-  ERR( cudaMalloc( (void**)&utopia_vec_d, OBJS * sizeof(float) ) );
+
+  printf("allocation ready.\n");
 
   // setup random generator
   rand_init<<<1, POP_SIZE>>>( d_state );
+
+  printf("PRNG ready.\n");
 
   // create random population
   srand( time( NULL ) );
   for (size_t i = 0; i < POP_SIZE; i++) {
     for (size_t j = 0; j < PARAMS; j++) {
-      population_h[i][j] = randomFloat();
-      //population_h[i][j] = ((float)i)/PARAMS;
+      population_h[i * PARAMS + j] = randomFloat();
+      //population_h[i * PARAMS + j] = ((float)i)/PARAMS;
     }
   }
 
+  printf("population init ready.\n");
+
   // copy data to GPU
   ERR( cudaMemcpy( population_d, population_h, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyHostToDevice ) );
+
+  printf("data copy ready.\n");
 
   // capture the start time
   cudaEvent_t     start, stop;
@@ -253,30 +281,28 @@ int main() {
   ERR( cudaEventRecord( start, 0 ) );
 
   // start the kernel
-  dim3 dimBlock(POP_WIDTH + 1, POP_WIDTH);
-  mcea<<<1, dimBlock>>>( population_d, objectives_d, utopia_vec_d, d_state );
+  dim3 dimBlock(32, 32);
+  dim3 dimGrid((POP_WIDTH + 1) / 32 + 1, POP_WIDTH / 32 + 1);
+  printf("grid: %d, %d; block: %d, %d\n", dimGrid.x, dimGrid.y, dimBlock.x, dimBlock.y);
+  mcea<<<dimGrid, dimBlock>>>( population_d, objectives_d, d_state );
+
+  printf("kernel ready\n");
 
   // get stop time, and display the timing results
   ERR( cudaEventRecord( stop, 0 ) );
   ERR( cudaEventSynchronize( stop ) );
   float   elapsedTime;
   ERR( cudaEventElapsedTime( &elapsedTime, start, stop ) );
-  printf( "Time to generate:  %f ms\n", elapsedTime );
+  printf( "duration:  %f ms\n", elapsedTime );
 
   // copy data from GPU
   ERR( cudaMemcpy( population_h, population_d, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyDeviceToHost ) );
   ERR( cudaMemcpy( objectives_h, objectives_d, POP_SIZE * OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
-  ERR( cudaMemcpy( utopia_vec_h, utopia_vec_d, OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
 
   ERR( cudaEventDestroy( start ) );
   ERR( cudaEventDestroy( stop ) );
 
-  // print some solutions
-  printVector( population_h[0], PARAMS );
-  printVector( objectives_h[0], OBJS );
-
   // free resources
   ERR( cudaFree( population_d ) );
   ERR( cudaFree( objectives_d ) );
-  ERR( cudaFree( utopia_vec_d ) );
 }

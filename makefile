@@ -9,5 +9,8 @@ DEPS = dtlz.cuh error.h util.h
 mcea: util.o dtlz.o mcea.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LINK)
 
+debug: mcea.cu dtlz.cu util.cu
+	$(CC) -g -G -o mcea_dbg $^ $(CFLAGS) $(LINK)
+
 clean:
 	rm -f *.o *~
