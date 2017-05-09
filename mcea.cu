@@ -5,6 +5,7 @@
 #include <curand.h>
 #include <curand_kernel.h>
 #include <math.h>
+#include <time.h>
 
 // own header files
 #include "error.h"
@@ -12,21 +13,21 @@
 #include "dtlz.cuh"
 
 // number of generations that the alg. performs
-#define GENERATIONS 1000
+#define GENERATIONS 100
 // the y-size of the population grid (in individuals)
-#define POP_WIDTH 1000
+#define POP_WIDTH 127
 // the total number of individuals in the population
 // the x-size is bigger than the y-size by 1 because of the topology
 #define POP_SIZE (POP_WIDTH * (POP_WIDTH + 1))
 // the number of parameters for the optimization problen (DTLZ-n)
 // can be adjusted at will, scales the memory usage linearly
 #define PARAMS 20
-// the number of optimization globals
+// the number of optimization goals
 // ! don't change this for now (weight calculation is hard coded)
 #define OBJS 3
 // the radius of the neighborhood around an individual
 // the neighborhood is square at all times
-#define N_RAD 1
+#define N_RAD 2
 // the width of the neighborhood around an individual
 #define N_WIDTH (2 * N_RAD + 1)
 // the probability of mutating a gene in 1 generation in 1 individual
@@ -61,16 +62,17 @@ __device__ int get_neighbor(int x, int y, int neighbor_index) {
 
 /*! \brief init PRNG
 
-Initializes the pseudo random number generator.
+Initializes one pseudo random number generator for each thread.
+The same seed is used, but every thread uses a different sequence.
 
 \param[out] state the data structure for the PRNG state
+\param[in] seed the seed for initialization
 
 \return nothing
 */
-__global__ void rand_init( curandState *state ) {
+__global__ void rand_init( curandStatePhilox4_32_10_t  *state, unsigned long seed ) {
   int idx = threadIdx.x+blockDim.x*blockIdx.x;
 
-  unsigned long long seed = (unsigned long long) clock64();
   curand_init(seed, idx, 0, &state[idx]);
 }
 
@@ -83,7 +85,7 @@ __global__ void rand_init( curandState *state ) {
 
   \return an integer in the specified range
 */
-__device__ int rnd_uniform_int( curandState *state, int values ) {
+__device__ int rnd_uniform_int( curandStatePhilox4_32_10_t  *state, int values ) {
 
     return (int)truncf( curand_uniform( state ) * ( values - 0.000001) );
 }
@@ -128,7 +130,7 @@ __device__ float weighted_fitness( float *objectives, int x, int y ) {
   \param[in,out] objectives an array containing all objective values (there will be written some new ones)
   \param[in] rng_state the initialized state of the PRNG to use
 */
-__global__ void mcea( float *population, float *objectives, curandState *rng_state ) {
+__global__ void mcea( float *population, float *objectives, curandStatePhilox4_32_10_t *rng_state ) {
   float offspring[PARAMS];
   float offspring_fit[OBJS];
 
@@ -253,13 +255,14 @@ int main() {
   float *population_d;
   float *objectives_d;
 
-  curandState *d_state;
-  ERR( cudaMalloc( &d_state, POP_SIZE * sizeof(curandState) ) );
+  curandStatePhilox4_32_10_t *d_state;
+  ERR( cudaMalloc( &d_state, POP_SIZE * sizeof(curandStatePhilox4_32_10_t) ) );
   ERR( cudaMalloc( (void**)&population_d, POP_SIZE * PARAMS * sizeof(float) ) );
   ERR( cudaMalloc( (void**)&objectives_d, POP_SIZE * OBJS * sizeof(float) ) );
 
   // setup random generator
-  rand_init<<<POP_SIZE / 1024 + 1, 1024>>>( d_state );
+  unsigned long seed = clock();
+  rand_init<<<POP_SIZE / 1024 + 1, 1024>>>( d_state, seed );
 
   // create random population
   srand( time( NULL ) );
@@ -281,7 +284,7 @@ int main() {
 
   // start the kernel
   dim3 dimBlock(32, 32);
-  dim3 dimGrid((POP_WIDTH + 1) / 32 + 1, POP_WIDTH / 32 + 1);
+  dim3 dimGrid(ceil((POP_WIDTH + 1) / 32.0) , ceil(POP_WIDTH / 32.0));
   mcea<<<dimGrid, dimBlock>>>( population_d, objectives_d, d_state );
 
   // get stop time, and display the timing results

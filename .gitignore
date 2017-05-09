@@ -5,6 +5,7 @@
 *.ptx
 *.cubin
 *.fatbin
+*.nvvp
 
 mcea
 mcea_dbg

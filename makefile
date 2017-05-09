@@ -1,5 +1,5 @@
 CC=nvcc
-CFLAGS=-arch=sm_52 --relocatable-device-code true
+CFLAGS=-arch=sm_52 --relocatable-device-code true -lineinfo
 LINK=-lcurand
 DEPS = dtlz.cuh error.h util.h
 
