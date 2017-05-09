@@ -259,7 +259,7 @@ int main() {
   ERR( cudaMalloc( (void**)&objectives_d, POP_SIZE * OBJS * sizeof(float) ) );
 
   // setup random generator
-  rand_init<<<1, POP_SIZE>>>( d_state );
+  rand_init<<<POP_SIZE / 1024 + 1, 1024>>>( d_state );
 
   // create random population
   srand( time( NULL ) );
