@@ -305,7 +305,6 @@ int main() {
   // free resources
   free( population_h );
   free( objectives_h );
-  free( d_state );
   ERR( cudaEventDestroy( start ) );
   ERR( cudaEventDestroy( stop ) );
 

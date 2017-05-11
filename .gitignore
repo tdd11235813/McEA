@@ -7,5 +7,9 @@
 *.fatbin
 *.nvvp
 
+gpu/doc/
+cpu/doc/
 mcea
+mcea_cpu
+mcea_cpu_dbg
 mcea_dbg
