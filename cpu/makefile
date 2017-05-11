@@ -1,12 +1,9 @@
-CC=gcc
-CFLAGS=-ffast-math -O3
+CC=g++
+CFLAGS=-ffast-math -O3 -fopenmp
 LINK=-lm
 DEPS = dtlz.h util.h
 
-%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
-
-mcea_cpu: util.o dtlz.o mcea.o
+mcea_cpu: mcea.cpp dtlz.cpp util.cpp
 	$(CC) -o $@ $^ $(CFLAGS) $(LINK)
 
 debug: mcea.cpp dtlz.cpp util.cpp
@@ -14,3 +11,4 @@ debug: mcea.cpp dtlz.cpp util.cpp
 
 clean:
 	rm -f *.o *~
+	rm mcea_cpu

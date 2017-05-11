@@ -5,6 +5,7 @@
 #include <math.h>
 #include <time.h>
 #include <random>
+#include <omp.h>
 
 // own header files
 #include "util.h"
@@ -37,6 +38,8 @@ using namespace std;
 // if true it writes the evolution of individual 0 in the population
 // don't use this with a big number of GENERATIONS
 #define VERBOSE false
+// the number of threads to use in OpenMP
+#define THREADS 4
 
 /*! \brief neighbor calculation
 
@@ -118,8 +121,12 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
   float offspring[PARAMS];
   float offspring_fit[OBJS];
 
+  omp_set_num_threads( THREADS );
+
   // ### evaluation ###
+  #pragma omp parallel for
   for (size_t x = 0; x < POP_WIDTH + 1; x++) {
+
     for (size_t y = 0; y < POP_WIDTH; y++) {
 
       int idx = x + y * (POP_WIDTH + 1);
@@ -128,22 +135,36 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
   }
 
   // init random distributions
-  uniform_int_distribution<int> uni_params( 0, PARAMS );
-  uniform_int_distribution<int> uni_neighbors( 0, N_WIDTH * N_WIDTH );
-  poisson_distribution<int> poisson_mutation( LAMBDA );
-  uniform_real_distribution<float> uni_allel(0.0,1.0);
+  uniform_int_distribution<int> uni_params[THREADS];
+  for (size_t i = 0; i < THREADS; i++)
+    uni_params[i] = uniform_int_distribution<int>( 0, PARAMS );
+
+  uniform_int_distribution<int> uni_neighbors[THREADS];
+  for (size_t i = 0; i < THREADS; i++)
+    uni_neighbors[i] = uniform_int_distribution<int>( 0, N_WIDTH * N_WIDTH );
+
+  poisson_distribution<int> poisson_mutation[THREADS];
+  for (size_t i = 0; i < THREADS; i++)
+    poisson_mutation[i] = poisson_distribution<int>( LAMBDA );
+
+  uniform_real_distribution<float> uni_allel[THREADS];
+  for (size_t i = 0; i < THREADS; i++)
+    uni_allel[i] = uniform_real_distribution<float>(0.0,1.0);
 
   // main loop
   for (size_t g = 0; g < GENERATIONS; g++) {
+    printf("\ngeneration: %d\n", g);
+    #pragma omp parallel for private( offspring, offspring_fit )
     for (size_t x = 0; x < POP_WIDTH + 1; x++) {
       for (size_t y = 0; y < POP_WIDTH; y++) {
 
         int idx = x + y * (POP_WIDTH + 1);
+        int thread_idx = omp_get_thread_num();
 
         // ### pairing ###
         // random neighbors
-        int neighbor_1 = get_neighbor( x, y, uni_neighbors( rng_state ) );
-        int neighbor_2 = get_neighbor( x, y, uni_neighbors( rng_state ) );
+        int neighbor_1 = get_neighbor( x, y, uni_neighbors[thread_idx]( rng_state ) );
+        int neighbor_2 = get_neighbor( x, y, uni_neighbors[thread_idx]( rng_state ) );
 
         // compare neighbors
         float fit_1 = weighted_fitness( objectives + neighbor_1 * OBJS, x, y );
@@ -164,7 +185,7 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
         }
         // ### crossover ###
         // == one-point crossover
-        int x_over_point = uni_params( rng_state );
+        int x_over_point = uni_params[thread_idx]( rng_state );
         if( idx == 0 && VERBOSE )
           printf( "xover: %d\n", x_over_point );
 
@@ -179,13 +200,13 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
         }
         // ### mutation ###
         // == uniform mutation
-        int num_mutations = poisson_mutation( rng_state );
+        int num_mutations = poisson_mutation[thread_idx]( rng_state );
         if( idx == 0 && VERBOSE )
           printf( "mut: %d\n", num_mutations );
 
         for (size_t i = 0; i < num_mutations; i++) {
-          int mut_location = uni_params( rng_state );
-          offspring[mut_location] = uni_allel( rng_state );
+          int mut_location = uni_params[thread_idx]( rng_state );
+          offspring[mut_location] = uni_allel[thread_idx]( rng_state );
         }
 
         if( idx == 0 && VERBOSE ) {
@@ -211,12 +232,18 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
         // compare and copy
         fit_1 = weighted_fitness( objectives + idx * OBJS, x, y );
         fit_2 = weighted_fitness( offspring_fit, x, y );
+        if(fit_2 < 1.0)
+          printf( "%4.2f \t", fit_2 );
 
         if(fit_2 < fit_1) {
-          for (size_t i = 0; i < PARAMS; i++)
+          for (size_t i = 0; i < PARAMS; i++) {
+            #pragma omp atomic write
             population[i + idx * PARAMS] = offspring[i];
-          for (size_t i = 0; i < OBJS; i++)
+          }
+          for (size_t i = 0; i < OBJS; i++) {
+            #pragma omp atomic write
             objectives[i + idx * OBJS] = offspring_fit[i];
+          }
         }
 
         if( idx == 0 && VERBOSE ) {
