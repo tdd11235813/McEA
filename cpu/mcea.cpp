@@ -14,7 +14,7 @@
 using namespace std;
 
 // number of generations that the alg. performs
-#define GENERATIONS 10
+#define GENERATIONS 1000
 // the y-size of the population grid (in individuals)
 #define POP_WIDTH 1000
 // the total number of individuals in the population
@@ -39,7 +39,7 @@ using namespace std;
 // don't use this with a big number of GENERATIONS
 #define VERBOSE false
 // the number of threads to use in OpenMP
-#define THREADS 4
+#define THREADS 8
 
 /*! \brief neighbor calculation
 
@@ -153,7 +153,6 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
 
   // main loop
   for (size_t g = 0; g < GENERATIONS; g++) {
-    printf("\ngeneration: %d\n", g);
     #pragma omp parallel for private( offspring, offspring_fit )
     for (size_t x = 0; x < POP_WIDTH + 1; x++) {
       for (size_t y = 0; y < POP_WIDTH; y++) {
@@ -232,8 +231,6 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
         // compare and copy
         fit_1 = weighted_fitness( objectives + idx * OBJS, x, y );
         fit_2 = weighted_fitness( offspring_fit, x, y );
-        if(fit_2 < 1.0)
-          printf( "%4.2f \t", fit_2 );
 
         if(fit_2 < fit_1) {
           for (size_t i = 0; i < PARAMS; i++) {
@@ -299,9 +296,8 @@ int main() {
   elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
   printf( "duration: %f\n", elapsed );
 
-  // search the minima
-  float min_sum = get_objective_sum( objectives_h, POP_SIZE, OBJS );
-  printf("min sum: %.2f\n", min_sum);
+  // write the objectives to file
+  write_objectives( "test.obj", objectives_h, POP_SIZE, OBJS );
 
   // free resources
   free( population_h );

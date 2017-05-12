@@ -13,9 +13,9 @@
 #include "dtlz.cuh"
 
 // number of generations that the alg. performs
-#define GENERATIONS 100
+#define GENERATIONS 1000
 // the y-size of the population grid (in individuals)
-#define POP_WIDTH 127
+#define POP_WIDTH 1000
 // the total number of individuals in the population
 // the x-size is bigger than the y-size by 1 because of the topology
 #define POP_SIZE (POP_WIDTH * (POP_WIDTH + 1))
@@ -298,9 +298,8 @@ int main() {
   ERR( cudaMemcpy( population_h, population_d, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyDeviceToHost ) );
   ERR( cudaMemcpy( objectives_h, objectives_d, POP_SIZE * OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
 
-  // search the minima
-  float min_sum = get_objective_sum( objectives_h, POP_SIZE, OBJS );
-  printf("min sum: %.2f\n", min_sum);
+  // write the objectives to file
+  write_objectives( "test.obj", objectives_h, POP_SIZE, OBJS );
 
   // free resources
   free( population_h );

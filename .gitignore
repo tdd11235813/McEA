@@ -6,6 +6,7 @@
 *.cubin
 *.fatbin
 *.nvvp
+*.obj
 
 gpu/doc/
 cpu/doc/
