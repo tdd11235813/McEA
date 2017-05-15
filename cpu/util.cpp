@@ -3,7 +3,11 @@
 */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
 #include <time.h>
+#include "config.h"
+
+using namespace std;
 
 /*! Returns a random float number in [0,1). */
 float randomFloat()
@@ -49,24 +53,58 @@ float get_objective_sum( float *objectives, int num_population, int num_objectiv
 Writes the given objectives into a file in the JMetal 5.2 file format.
 The objectives have to be given one individual after another.
 E. g. first all objectives of individual 1, next all of individual 2, ...
+The param OUTFILE is used as the filename and the extension '.obj' is appended.
 
-\param filename a pointer to the name of the file to write
 \param objectives a pointer to the objectives array
-\param pop_size the size of the population, that shall be written
-\param obj_count the number of objectives per individual
 */
-void write_objectives( const char *filename, float *objectives, int pop_size, int obj_count ) {
+void write_objectives( float *objectives ) {
 
-  FILE *out_file = fopen( filename, "w");
+  string filename = OUTFILE;
+  string extension = ".obj";
+  filename += extension;
+
+  FILE *out_file = fopen( filename.c_str(), "w");
   if(out_file == NULL)
-    printf("file: %s cannot be opened.\n", filename);
+    printf("file: %s cannot be opened.\n", filename.c_str() );
 
-  for (size_t i = 0; i < pop_size; i++) {
-    for (size_t j = 0; j < obj_count; j++) {
-      fprintf( out_file, "%f\t", objectives[i*obj_count + j] );
+  for (size_t i = 0; i < POP_SIZE; i++) {
+    for (size_t j = 0; j < OBJS; j++) {
+      fprintf( out_file, "%f\t", objectives[i*OBJS + j] );
     }
     fprintf( out_file, "\n" );
   }
+
+  fclose( out_file );
+}
+
+/*! \brief writes the runtime and config into a file
+
+Writes a file containing the configuration (the #define values) and runtime of an optimization run.
+The runtime is written in s.
+The param OUTFILE is used as the filename and the extension '.obj' is appended.
+
+\param runtime the duration of the calculations (with data copy, without file writing)
+*/
+void write_info( float runtime ) {
+
+  string filename = OUTFILE;
+  string extension = ".info";
+  filename += extension;
+
+  FILE *out_file = fopen( filename.c_str(), "w");
+  if(out_file == NULL)
+    printf("file: %s cannot be opened.\n", filename.c_str() );
+
+  fprintf( out_file, "name:\t\t%s\n", filename.c_str() );
+  fprintf( out_file, "runtime:\t%f s\n", runtime );
+  fprintf( out_file, "threads:\t%d\n", THREADS );
+  fprintf( out_file, "generations:\t%d\n", GENERATIONS );
+  fprintf( out_file, "pop_width:\t%d\n", POP_WIDTH );
+  fprintf( out_file, "pop_size:\t%d\n", POP_SIZE );
+  fprintf( out_file, "param_count\t%d\n", PARAMS );
+  fprintf( out_file, "objectives:\t%d\n", OBJS );
+  fprintf( out_file, "neighborhood:\t%d\n", N_RAD );
+  fprintf( out_file, "mutation_prob:\t%f\n", P_MUT );
 
   fclose( out_file );
 }
