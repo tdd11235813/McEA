@@ -8,6 +8,10 @@
 *.nvvp
 *.obj
 *.info
+**/CMakeCache.txt
+**/CMakeFiles/
+**/Makefile
+**/cmake_install.cmake
 
 gpu/doc/
 cpu/doc/
