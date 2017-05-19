@@ -25,3 +25,5 @@
 #define VERBOSE false
 // the base of the filename where the results shall be written
 #define OUTFILE "test"
+// the size of one block in a dimension
+#define BLOCKDIM 16

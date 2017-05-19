@@ -20,7 +20,7 @@ fitness = []
 with open(file, 'rb') as csvfile:
     fitreader = csv.reader(csvfile, delimiter='\t')
     for row in fitreader:
-        fitness.append(map(float, row[:-1]))
+        fitness.append(map(float, row))
 
 fitness = zip(*fitness)
 

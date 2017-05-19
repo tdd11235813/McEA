@@ -40,7 +40,7 @@ __device__ void dtlz1( float *params, float *objectives, int param_size, int obj
 		double g = 0.0;
 		for (int i = obj_size - 1; i < param_size; i++) {
 			g += powf(params[i] - 0.5, 2.0)
-					- cos(20.0 * CUDART_PI_F * (params[i] - 0.5));
+					- cosf(20.0 * CUDART_PI_F * (params[i] - 0.5));
 		}
 		g = 0.5 * (1.0 + 100.0 * (param_size - obj_size + 1 + g));
 

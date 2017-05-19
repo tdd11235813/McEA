@@ -13,6 +13,7 @@
 **/Makefile
 **/cmake_install.cmake
 
+old_bin/
 gpu/doc/
 cpu/doc/
 mcea
