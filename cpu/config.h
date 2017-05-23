@@ -27,3 +27,5 @@
 #define OUTFILE "test"
 // the number of threads to use in OpenMP
 #define THREADS 8
+// the scaling factor for the VADS weighting algorithm
+#define VADS_SCALE 100
