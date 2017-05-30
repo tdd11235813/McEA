@@ -83,15 +83,15 @@ double weighted_fitness( float *objectives, int x, int y ) {
 
   // normalize weight vector
   float weight_length = sqrt(
-      weights[0] * weights[0] + 
-      weights[1] * weights[1] + 
+      weights[0] * weights[0] +
+      weights[1] * weights[1] +
       weights[2] * weights[2] );
   double weight_norm[] = { weights[0] / (double)weight_length, weights[1] / (double)weight_length, weights[2] / (double)weight_length };
 
   // normalize fitness
   float obj_length = sqrt(
-      objectives[0] * objectives[0] + 
-      objectives[1] * objectives[1] + 
+      objectives[0] * objectives[0] +
+      objectives[1] * objectives[1] +
       objectives[2] * objectives[2] );
   double obj_norm[] = { objectives[0] / (double)obj_length, objectives[1] / (double)obj_length, objectives[2] / (double)obj_length };
 

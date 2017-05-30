@@ -8,6 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+import random
 import csv
 
 
@@ -19,24 +20,29 @@ ax = fig.add_subplot(111, projection='3d')
 
 # read the optimal values
 optimal = []
-with open('/home/est/cloud/promotion/data/DTLZ/DTLZ1.3D.pf', 'rb') as csvfile:
+with open('./solutions_dtlz/DTLZ1.3D.pf', 'rb') as csvfile:
+    num_lines = sum(1 for line in csvfile)
+    csvfile.seek(0)
     fitreader = csv.reader(csvfile, delimiter='\t')
     for row in fitreader:
-        optimal.append(map(float, row[:-1]))
+        if random.random() < float(points) / num_lines:
+            optimal.append(map(float, row[:-1]))
 
 optimal = zip(*optimal)
 
 xo = optimal[0]
 yo = optimal[1]
 zo = optimal[2]
-ax.scatter(xo, yo, zo, c=( 1.0, 0.0, 0.0, 0.1), marker='.')
+ax.scatter(xo, yo, zo, c=( 1.0, 0.0, 0.0, 0.1 ), marker='.')
 
 # read the fitness values
 fitness = []
 with open(file, 'rb') as csvfile:
+    num_lines = sum(1 for line in csvfile)
+    csvfile.seek(0)
     fitreader = csv.reader(csvfile, delimiter='\t')
     for row in fitreader:
-        if len(fitness) < points:
+        if random.random() < float(points) / num_lines:
             fitness.append(map(float, row))
 
 fitness = zip(*fitness)

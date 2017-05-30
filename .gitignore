@@ -16,6 +16,7 @@
 old_bin/
 gpu/doc/
 cpu/doc/
+analysis/solutions_dtlz/
 mcea
 mcea_cpu
 mcea_cpu_dbg

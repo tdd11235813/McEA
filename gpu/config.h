@@ -27,3 +27,5 @@
 #define OUTFILE "test"
 // the size of one block in a dimension
 #define BLOCKDIM 16
+// the scaling factor for the VADS weighting algorithm
+#define VADS_SCALE 100

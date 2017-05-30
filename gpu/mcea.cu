@@ -65,6 +65,20 @@ __device__ int rnd_uniform_int( curandStatePhilox4_32_10_t  *state, int values )
     return (int)truncf( curand_uniform( state ) * ( values - 0.000001) );
 }
 
+/* \brief calculates the dot product for 2 vectors
+
+   Interprets the values at the pointers x and y as vectors of size 3 and calculates the dot product from them.
+   This is only aplicable for vectors of size 3!
+
+   \param[in] x pointer to the first operand
+   \param[in] y pointer to the second operand
+   \return the scalar value of the dot product
+*/
+__device__ float inner_product_3( float *x, float *y) {
+
+  return x[0] * y[0] + x[1] * y[1] + x[2] * y[2];
+}
+
 /* \brief calculates the weighted fitness
 
 Takes the objective values of the individual at idx and calculates its fitness.
@@ -78,21 +92,40 @@ TODO: for real world problems use the weighted tchebychev method (use utopia vec
 
 \return the weighted fitness value
 */
-__device__ float weighted_fitness( float *objectives, int x, int y ) {
+__device__ double weighted_fitness( float *objectives, int x, int y ) {
   // this decides if the individual is on the mirrored side of the population
   // and gives the correction factor for the weights
   int mirror = (x + y < POP_WIDTH)? false : true;
 
+  // calculate weights
   float offset =  (mirror) ? 0.25 : 0.0;
   int _x  =  (mirror) ? POP_WIDTH - y - 1 : x;
   int _y  =  (mirror) ? POP_WIDTH - x : y;
 
-  // calculate the fitness
-  return \
-      objectives[0] * (1 - (_x+offset)/(POP_WIDTH-0.5) - (_y+offset)/(POP_WIDTH-0.5)) \
-    + objectives[1] * (_x+offset)/(POP_WIDTH-0.5) \
-    + objectives[2] * (_y+offset)/(POP_WIDTH-0.5);
+  float weights[OBJS];
+  weights[0] = (1 - (_x+offset)/(POP_WIDTH-0.5) - (_y+offset)/(POP_WIDTH-0.5));
+  weights[1] = (_x+offset)/(POP_WIDTH-0.5);
+  weights[2] = (_y+offset)/(POP_WIDTH-0.5);
 
+  // normalize weight vector
+  float weight_length = sqrt(
+      weights[0] * weights[0] +
+      weights[1] * weights[1] +
+      weights[2] * weights[2] );
+  float weight_norm[] = { weights[0] / weight_length, weights[1] / weight_length, weights[2] / weight_length };
+
+  // normalize fitness
+  float obj_length = sqrt(
+      objectives[0] * objectives[0] +
+      objectives[1] * objectives[1] +
+      objectives[2] * objectives[2] );
+  float obj_norm[] = { objectives[0] / obj_length, objectives[1] / obj_length, objectives[2] / obj_length };
+
+  // calculate the fitness
+  return obj_length / pow( (double)inner_product_3( weight_norm, obj_norm), VADS_SCALE );
+  // numerical more stable version
+  // takes more time, needs a higher VADS_SCALE
+  //return exp( (VADS_SCALE + 1) * log( (double)obj_length ) - VADS_SCALE * log( (double)inner_product_3( weight_norm,  obj_norm) ) );
 }
 
 /*! \brief McEA kernel
@@ -131,8 +164,8 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
       int neighbor_2 = get_neighbor( x, y, rnd_uniform_int( &rng_local, N_WIDTH * N_WIDTH ) );
 
       // compare neighbors
-      float fit_1 = weighted_fitness( objectives + neighbor_1 * OBJS, x, y );
-      float fit_2 = weighted_fitness( objectives + neighbor_2 * OBJS, x, y );
+      double fit_1 =  weighted_fitness( objectives + neighbor_1 * OBJS, x, y );
+      double fit_2 =  weighted_fitness( objectives + neighbor_2 * OBJS, x, y );
       int neighbor_sel = (fit_1 < fit_2)? neighbor_1 : neighbor_2;
 
       if( idx == 0 && VERBOSE )
@@ -194,8 +227,12 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
       }
 
       // compare and copy
-      fit_1 = weighted_fitness( objectives + idx * OBJS, x, y );
-      fit_2 = weighted_fitness( offspring_fit + block_idx * OBJS, x, y );
+      fit_1 =  weighted_fitness( objectives + idx * OBJS, x, y );
+      fit_2 =  weighted_fitness( offspring_fit + block_idx * OBJS, x, y );
+
+      if( idx == 0 && VERBOSE ) {
+        printf( "offspring weight: %.5lf\n", fit_2 );
+      }
 
       if(fit_2 < fit_1) {
         for (size_t i = 0; i < PARAMS; i++)
