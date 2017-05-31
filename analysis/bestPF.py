@@ -17,7 +17,7 @@ files = sys.argv[2:]
 # read the fitness values from the files
 fitness = []
 for f in files:
-    with open(f, 'rb') as csvfile:
+    with open(f, 'r') as csvfile:
         fitreader = csv.reader(csvfile, delimiter='\t')
         for row in fitreader:
             fitness.append(map(float, row[:-1]))
@@ -47,6 +47,6 @@ pareto_front_ind = tools.sortLogNondominated(population, len(population), True)
 
 pareto_front = set(map(lambda x: x.fitness.values, pareto_front_ind))
 
-with open(outfile, 'wb') as csvfile:
+with open(outfile, 'w') as csvfile:
     pfwriter = csv.writer(csvfile, delimiter='\t')
     map(pfwriter.writerow, pareto_front)
