@@ -7,6 +7,7 @@ There is a GPU variant of the algorithm residing in `gpu/`.
 Test it via:
 
 ```
+cmake .
 make
 ./mcea
 ```
