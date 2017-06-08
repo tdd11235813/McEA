@@ -284,7 +284,6 @@ int main() {
   for (size_t i = 0; i < POP_SIZE; i++) {
     for (size_t j = 0; j < PARAMS; j++) {
       population_h[i * PARAMS + j] = randomFloat();
-      //population_h[i * PARAMS + j] = ((float)i)/PARAMS;
     }
   }
 
