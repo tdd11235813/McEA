@@ -89,7 +89,7 @@ void dtlz2( float *params, float *objectives, int param_size, int obj_size ) {
     f *= cos(params[j] * M_PI / 2);
   objectives[0] = f;
 
-  for (int i = 1; i <= obj_size; i++) {
+  for (int i = 1; i < obj_size; i++) {
     f = (1 + g);
     for (int j = 0; j < obj_size - i - 1; j++)
       f *= cos(params[j] * M_PI / 2);

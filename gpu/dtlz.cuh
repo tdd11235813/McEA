@@ -5,5 +5,6 @@
 
 __device__ void testObjSum( float *, float *, int, int);
 __device__ void dtlz1( float *, float *, int , int );
+__device__ void dtlz2( float *, float *, int , int );
 
 #endif

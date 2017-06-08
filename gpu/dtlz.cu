@@ -65,3 +65,35 @@ __device__ void dtlz1( float *params, float *objectives, int param_size, int obj
 
     return;
 }
+
+/*! \brief Function of the DTLZ2 multicriterial optimization problem
+
+  Calculates the objectives for the DTLZ2 problem [deb2002scalable], given an array of parameters.
+
+  \param params pointer to array of param values
+  \param objectives pointer to objective array
+  \param param_size number of elements in the param array
+  \param obj_size number of elements in the objective array
+*/
+__device__ void dtlz2( float *params, float *objectives, int param_size, int obj_size ) {
+
+  double g = 0.0;
+  for (int i = obj_size - 1; i < param_size; i++)
+    g += powf(params[i] - 0.5, 2.0);
+
+  // different first iteration
+  double f = (1 + g);
+  for (int j = 0; j < obj_size - 1; j++)
+    f *= cosf(params[j] * CUDART_PI_F / 2);
+  objectives[0] = f;
+
+  for (int i = 1; i < obj_size; i++) {
+    f = (1 + g);
+    for (int j = 0; j < obj_size - i - 1; j++)
+      f *= cosf(params[j] * CUDART_PI_F / 2);
+
+    f *= sinf(params[obj_size - i - 1] * CUDART_PI_F / 2);
+
+    objectives[i] = f;
+  }
+}
