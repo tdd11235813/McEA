@@ -119,15 +119,48 @@ __device__ void dtlz3( float *params, float *objectives, int param_size, int obj
   // different first iteration
   double f = g;
   for (int j = 0; j < obj_size - 1; j++)
-    f *= cos(params[j] * CUDART_PI_F / 2);
+    f *= cosf(params[j] * CUDART_PI_F / 2);
   objectives[0] = f;
 
   for (int i = 1; i < obj_size; i++) {
     f = g;
     for (int j = 0; j < obj_size - i - 1; j++)
-      f *= cos(params[j] * CUDART_PI_F / 2);
+      f *= cosf(params[j] * CUDART_PI_F / 2);
 
-    f *= sin(params[obj_size - i - 1] * CUDART_PI_F / 2);
+    f *= sinf(params[obj_size - i - 1] * CUDART_PI_F / 2);
+
+    objectives[i] = f;
+  }
+}
+
+/*! \brief Function of the DTLZ4 multicriterial optimization problem
+
+  Calculates the objectives for the DTLZ4 problem [deb2002scalable], given an array of parameters.
+
+  \param params pointer to array of param values
+  \param objectives pointer to objective array
+  \param param_size number of elements in the param array
+  \param obj_size number of elements in the objective array
+*/
+__device__ void dtlz4( float *params, float *objectives, int param_size, int obj_size ) {
+
+  double g = 0.0;
+  double alpha = 100.0;
+  for (int i = obj_size - 1; i < param_size; i++)
+    g += powf(params[i] - 0.5,2);
+
+  // different first iteration
+  double f = (1 + g);
+  for (int j = 0; j < obj_size - 1; j++)
+    f *= cos( powf(params[j], alpha) * CUDART_PI_F / 2);
+  objectives[0] = f;
+
+  for (int i = 1; i < obj_size; i++) {
+    f = (1 + g);
+    for (int j = 0; j < obj_size - i - 1; j++)
+      f *= cos( powf(params[j], alpha) * CUDART_PI_F / 2);
+
+    f *= sin( powf(params[obj_size - i - 1], alpha) * CUDART_PI_F / 2);
 
     objectives[i] = f;
   }

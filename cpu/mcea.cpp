@@ -122,7 +122,7 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
   // ### evaluation ###
   #pragma omp parallel for
   for (size_t idx = 0; idx < POP_SIZE + 1; idx++) {
-      dtlz3( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
+      dtlz4( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
   }
 
   // init random distributions
@@ -210,7 +210,7 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
         // == select if better
 
         // evaluate the offspring
-        dtlz3( offspring, offspring_fit, PARAMS, OBJS );
+        dtlz4( offspring, offspring_fit, PARAMS, OBJS );
 
         if( idx == 0 && VERBOSE ) {
           printf( "offspring fit: " );
@@ -285,7 +285,7 @@ int main() {
   // start the algorithm
   mcea( population_h, objectives_h, d_state );
   // for (size_t i = 0; i < POP_SIZE; i++) {
-  //   dtlz3( population_h + i*PARAMS, objectives_h + i*OBJS, PARAMS, OBJS );
+  //   dtlz4( population_h + i*PARAMS, objectives_h + i*OBJS, PARAMS, OBJS );
   // }
 
   clock_gettime(CLOCK_MONOTONIC, &finish);
