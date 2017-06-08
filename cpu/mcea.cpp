@@ -121,13 +121,8 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
 
   // ### evaluation ###
   #pragma omp parallel for
-  for (size_t x = 0; x < POP_WIDTH + 1; x++) {
-
-    for (size_t y = 0; y < POP_WIDTH; y++) {
-
-      int idx = x + y * (POP_WIDTH + 1);
+  for (size_t idx = 0; idx < POP_SIZE + 1; idx++) {
       dtlz1( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
-    }
   }
 
   // init random distributions
@@ -278,7 +273,7 @@ int main() {
   srand( time( NULL ) );
   for (size_t i = 0; i < POP_SIZE; i++) {
     for (size_t j = 0; j < PARAMS; j++) {
-      population_h[i * PARAMS + j] = randomFloat();
+      population_h[i * PARAMS + j] = ((float)j) / PARAMS; //randomFloat();
       //population_h[i * PARAMS + j] = ((float)i)/PARAMS;
     }
   }
@@ -290,6 +285,9 @@ int main() {
 
   // start the algorithm
   mcea( population_h, objectives_h, d_state );
+  // for (size_t i = 0; i < POP_SIZE; i++) {
+  //    dtlz2( population_h + i*PARAMS, objectives_h + i*OBJS, PARAMS, OBJS );
+  // }
 
   clock_gettime(CLOCK_MONOTONIC, &finish);
   elapsed = (finish.tv_sec - start.tv_sec);
