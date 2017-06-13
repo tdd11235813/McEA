@@ -2,7 +2,7 @@
 
 /*! \file dtlz.cu
   This module contains all used DTLZ functions. Definition of the functions can be found in:
-  Deb, Kalyanmoy, et al. "Scalable multi-objective optimization test problems." Evolutionary Computation, 2002. CEC'02. Proceedings of the 2002 Congress on. Vol. 1. IEEE, 2002.
+  Deb, K., Thiele, L., Laumanns, M., & Zitzler, E. (2005). Scalable test problems for evolutionary multiobjective optimization (pp. 105-145). Springer London.
 */
 
 /*!
@@ -28,7 +28,7 @@ __device__ void testObjSum( float *params, float *objectives, int param_size, in
 
 /*! \brief Function of the DTLZ1 multicriterial optimization problem
 
-  Calculates the objectives for the DTLZ1 problem [deb2002scalable], given an array of parameters.
+  Calculates the objectives for the DTLZ1 problem [deb2005scalable], given an array of parameters.
 
   \param params pointer to array of param values
   \param objectives pointer to objective array
@@ -68,7 +68,7 @@ __device__ void dtlz1( float *params, float *objectives, int param_size, int obj
 
 /*! \brief Function of the DTLZ2 multicriterial optimization problem
 
-  Calculates the objectives for the DTLZ2 problem [deb2002scalable], given an array of parameters.
+  Calculates the objectives for the DTLZ2 problem [deb2005scalable], given an array of parameters.
 
   \param params pointer to array of param values
   \param objectives pointer to objective array
@@ -100,7 +100,7 @@ __device__ void dtlz2( float *params, float *objectives, int param_size, int obj
 
 /*! \brief Function of the DTLZ3 multicriterial optimization problem
 
-  Calculates the objectives for the DTLZ3 problem [deb2002scalable], given an array of parameters.
+  Calculates the objectives for the DTLZ3 problem [deb2005scalable], given an array of parameters.
 
   \param params pointer to array of param values
   \param objectives pointer to objective array
@@ -135,7 +135,7 @@ __device__ void dtlz3( float *params, float *objectives, int param_size, int obj
 
 /*! \brief Function of the DTLZ4 multicriterial optimization problem
 
-  Calculates the objectives for the DTLZ4 problem [deb2002scalable], given an array of parameters.
+  Calculates the objectives for the DTLZ4 problem [deb2005scalable], given an array of parameters.
 
   \param params pointer to array of param values
   \param objectives pointer to objective array
@@ -164,4 +164,34 @@ __device__ void dtlz4( float *params, float *objectives, int param_size, int obj
 
     objectives[i] = f;
   }
+}
+
+/*! \brief Function of the DTLZ7 multicriterial optimization problem
+
+  Calculates the objectives for the DTLZ7 problem [deb2005scalable], given an array of parameters.
+
+  \param params pointer to array of param values
+  \param objectives pointer to objective array
+  \param param_size number of elements in the param array
+  \param obj_size number of elements in the objective array
+*/
+__device__ void dtlz7( float *params, float *objectives, int param_size, int obj_size ) {
+
+        float g = 0.0;
+        float h = 0.0;
+
+        for (int i = obj_size - 1; i < param_size; i++) {
+            g += params[i];
+        }
+        g= 2 + ( 9 * g ) / (param_size - obj_size + 1);
+
+
+        for (int i = 0; i < obj_size - 1 ; i++)
+            objectives[i] = params[i];
+
+        for (int i = 0 ; i < obj_size - 1; i++)
+            h += params[i] / g * (1 + sinf(3 * CUDART_PI_F * params[i]));
+        h = obj_size - h;
+
+        objectives[obj_size-1] =  g * h;
 }

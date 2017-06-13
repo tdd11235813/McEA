@@ -8,5 +8,6 @@ void dtlz1( float *, float *, int , int );
 void dtlz2( float *, float *, int , int );
 void dtlz3( float *, float *, int , int );
 void dtlz4( float *, float *, int , int );
+void dtlz7( float *, float *, int , int );
 
 #endif
