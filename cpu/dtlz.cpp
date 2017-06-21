@@ -210,6 +210,45 @@ void dtlz5( float *params, float *objectives, int param_size, int obj_size ) {
   }
 }
 
+/*! \brief Function of the DTLZ6 multicriterial optimization problem
+
+  Calculates the objectives for the DTLZ6 problem [deb2005scalable], given an array of parameters.
+
+  \param params pointer to array of param values
+  \param objectives pointer to objective array
+  \param param_size number of elements in the param array
+  \param obj_size number of elements in the objective array
+*/
+void dtlz6( float *params, float *objectives, int param_size, int obj_size ) {
+
+  float g = 0.0;
+  float t = 0.0;
+  float theta[obj_size-1];
+
+  for (int i = obj_size - 1; i < param_size; i++)
+    g += powf(params[i],0.1);
+
+  t = M_PI /(4 * (1 + g));
+
+  theta[0]= M_PI_2 * params[0];
+  for (int i = 1; i < obj_size - 1 ; i++)
+    theta[i]=  t * (1 + 2 * g * params[i]);
+
+  double f = 1 + g;
+  for (int j = 0; j < obj_size - 1; j++)
+      f *= cosf(theta[j]);
+  objectives[0] = f;
+
+  for (int i = 1; i < obj_size; i++) {
+    f = (1 + g);
+    for (int j = 0; j < obj_size - i - 1; j++)
+      f *= cosf(theta[j]);
+
+    f *= sinf(theta[obj_size - i - 1]);
+
+    objectives[i] = f;
+  }
+}
 
 /*! \brief Function of the DTLZ7 multicriterial optimization problem
 
