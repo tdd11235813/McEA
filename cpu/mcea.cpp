@@ -285,7 +285,7 @@ int main() {
   // start the algorithm
   mcea( population_h, objectives_h, d_state );
   // for (size_t i = 0; i < POP_SIZE; i++) {
-  //   dtlz7( population_h + i*PARAMS, objectives_h + i*OBJS, PARAMS, OBJS );
+  //   dtlz5( population_h + i*PARAMS, objectives_h + i*OBJS, PARAMS, OBJS );
   // }
 
   clock_gettime(CLOCK_MONOTONIC, &finish);
