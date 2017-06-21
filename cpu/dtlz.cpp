@@ -185,13 +185,13 @@ void dtlz5( float *params, float *objectives, int param_size, int obj_size ) {
   float theta[obj_size-1];
 
   for (int i = obj_size - 1; i < param_size; i++) {
-    g += pow(params[i]-0.5,2);
+    g += powf(params[i]-0.5,2);
   }
 
   t = M_PI /(4 * (1 + g));
 
   theta[0]= M_PI_2 * params[0];
-  for (unsigned i = 1; i < obj_size - 1 ; i++)
+  for (int i = 1; i < obj_size - 1 ; i++)
     theta[i]=  t * (1 + 2 * g * params[i]);
 
   double f = 1 + g;
@@ -199,9 +199,9 @@ void dtlz5( float *params, float *objectives, int param_size, int obj_size ) {
       f *= cosf(theta[j]);
   objectives[0] = f;
 
-  for (unsigned i = 1; i < obj_size; i++) {
+  for (int i = 1; i < obj_size; i++) {
     f = (1 + g);
-    for (unsigned j = 0; j < obj_size - i - 1; j++)
+    for (int j = 0; j < obj_size - i - 1; j++)
       f *= cosf(theta[j]);
 
     f *= sinf(theta[obj_size - i - 1]);

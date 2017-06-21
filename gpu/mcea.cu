@@ -151,108 +151,108 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
   if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {
     rng_local = *(rng_state + idx);
     // ### evaluation ###
-    dtlz7( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
+    dtlz5( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
   }
 
   // main loop
-  for (size_t g = 0; g < GENERATIONS; g++) {
-
-    if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {
-      // ### pairing ###
-      // random neighbors
-      int neighbor_1 = get_neighbor( x, y, rnd_uniform_int( &rng_local, N_WIDTH * N_WIDTH ) );
-      int neighbor_2 = get_neighbor( x, y, rnd_uniform_int( &rng_local, N_WIDTH * N_WIDTH ) );
-
-      // compare neighbors
-      double fit_1 =  weighted_fitness( objectives + neighbor_1 * OBJS, x, y );
-      double fit_2 =  weighted_fitness( objectives + neighbor_2 * OBJS, x, y );
-      int neighbor_sel = (fit_1 < fit_2)? neighbor_1 : neighbor_2;
-
-      if( idx == 0 && VERBOSE )
-        printf("x: %d, y: %d, n1: %3d(%.3f), n2: %3d(%.3f), sel: %3d\n", x, y, neighbor_1, fit_1, neighbor_2, fit_2, neighbor_sel);
-
-      if( idx == 0 && VERBOSE ) {
-        printf( "original: " );
-        for (size_t i = 0; i < PARAMS; i++)
-          printf( "%.2f, ", population[i + idx * PARAMS] );
-        printf( "\n" );
-        for (size_t i = 0; i < OBJS; i++)
-          printf( "%.2f, ", objectives[i + idx * OBJS] );
-        printf( "\n" );
-      }
-      // ### crossover ###
-      // == one-point crossover
-      int x_over_point = rnd_uniform_int( &rng_local, PARAMS );
-      if( idx == 0 && VERBOSE )
-        printf( "xover: %d\n", x_over_point );
-
-      for (size_t i = 0; i < PARAMS; i++)
-        offspring[block_idx * PARAMS + i] = (i<x_over_point) ? population[i + idx * PARAMS] : population[i + neighbor_sel * PARAMS];
-
-      if( idx == 0 && VERBOSE ) {
-        printf( "crossover: " );
-        for (size_t i = 0; i < PARAMS; i++)
-          printf( "%.2f, ", offspring[block_idx * PARAMS + i] );
-        printf( "\n" );
-      }
-      // ### mutation ###
-      // == uniform mutation
-      int num_mutations = curand_poisson( &rng_local, LAMBDA );
-      if( idx == 0 && VERBOSE )
-        printf( "mut: %d\n", num_mutations );
-
-      for (size_t i = 0; i < num_mutations; i++) {
-        int mut_location = rnd_uniform_int( &rng_local, PARAMS );
-        offspring[block_idx * PARAMS + mut_location] = curand_uniform( &rng_local );
-      }
-
-      if( idx == 0 && VERBOSE ) {
-        printf( "mutated: " );
-        for (size_t i = 0; i < PARAMS; i++)
-          printf( "%.2f, ", offspring[block_idx * PARAMS + i] );
-        printf( "\n" );
-      }
-
-      // ### selection ###
-      // == select if better
-
-      // evaluate the offspring
-      dtlz7( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS );
-
-      if( idx == 0 && VERBOSE ) {
-        printf( "offspring fit: " );
-        for (size_t i = 0; i < OBJS; i++)
-          printf( "%.2f, ", offspring_fit[block_idx * OBJS + i] );
-        printf( "\n" );
-      }
-
-      // compare and copy
-      fit_1 =  weighted_fitness( objectives + idx * OBJS, x, y );
-      fit_2 =  weighted_fitness( offspring_fit + block_idx * OBJS, x, y );
-
-      if( idx == 0 && VERBOSE ) {
-        printf( "offspring weight: %.5lf\n", fit_2 );
-      }
-
-      if(fit_2 < fit_1) {
-        for (size_t i = 0; i < PARAMS; i++)
-          population[i + idx * PARAMS] = offspring[block_idx * PARAMS + i];
-        for (size_t i = 0; i < OBJS; i++)
-          objectives[i + idx * OBJS] = offspring_fit[block_idx * OBJS + i];
-      }
-
-      if( idx == 0 && VERBOSE ) {
-        printf( "new ind: " );
-        for (size_t i = 0; i < PARAMS; i++)
-          printf( "%.2f, ", population[i + idx * PARAMS] );
-        printf( "\n" );
-        for (size_t i = 0; i < OBJS; i++)
-          printf( "%.2f, ", objectives[i + idx * OBJS] );
-        printf( "\n" );
-      }
-    }
-    __syncthreads();
-  }
+//  for (size_t g = 0; g < GENERATIONS; g++) {
+//
+//    if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {
+//      // ### pairing ###
+//      // random neighbors
+//      int neighbor_1 = get_neighbor( x, y, rnd_uniform_int( &rng_local, N_WIDTH * N_WIDTH ) );
+//      int neighbor_2 = get_neighbor( x, y, rnd_uniform_int( &rng_local, N_WIDTH * N_WIDTH ) );
+//
+//      // compare neighbors
+//      double fit_1 =  weighted_fitness( objectives + neighbor_1 * OBJS, x, y );
+//      double fit_2 =  weighted_fitness( objectives + neighbor_2 * OBJS, x, y );
+//      int neighbor_sel = (fit_1 < fit_2)? neighbor_1 : neighbor_2;
+//
+//      if( idx == 0 && VERBOSE )
+//        printf("x: %d, y: %d, n1: %3d(%.3f), n2: %3d(%.3f), sel: %3d\n", x, y, neighbor_1, fit_1, neighbor_2, fit_2, neighbor_sel);
+//
+//      if( idx == 0 && VERBOSE ) {
+//        printf( "original: " );
+//        for (size_t i = 0; i < PARAMS; i++)
+//          printf( "%.2f, ", population[i + idx * PARAMS] );
+//        printf( "\n" );
+//        for (size_t i = 0; i < OBJS; i++)
+//          printf( "%.2f, ", objectives[i + idx * OBJS] );
+//        printf( "\n" );
+//      }
+//      // ### crossover ###
+//      // == one-point crossover
+//      int x_over_point = rnd_uniform_int( &rng_local, PARAMS );
+//      if( idx == 0 && VERBOSE )
+//        printf( "xover: %d\n", x_over_point );
+//
+//      for (size_t i = 0; i < PARAMS; i++)
+//        offspring[block_idx * PARAMS + i] = (i<x_over_point) ? population[i + idx * PARAMS] : population[i + neighbor_sel * PARAMS];
+//
+//      if( idx == 0 && VERBOSE ) {
+//        printf( "crossover: " );
+//        for (size_t i = 0; i < PARAMS; i++)
+//          printf( "%.2f, ", offspring[block_idx * PARAMS + i] );
+//        printf( "\n" );
+//      }
+//      // ### mutation ###
+//      // == uniform mutation
+//      int num_mutations = curand_poisson( &rng_local, LAMBDA );
+//      if( idx == 0 && VERBOSE )
+//        printf( "mut: %d\n", num_mutations );
+//
+//      for (size_t i = 0; i < num_mutations; i++) {
+//        int mut_location = rnd_uniform_int( &rng_local, PARAMS );
+//        offspring[block_idx * PARAMS + mut_location] = curand_uniform( &rng_local );
+//      }
+//
+//      if( idx == 0 && VERBOSE ) {
+//        printf( "mutated: " );
+//        for (size_t i = 0; i < PARAMS; i++)
+//          printf( "%.2f, ", offspring[block_idx * PARAMS + i] );
+//        printf( "\n" );
+//      }
+//
+//      // ### selection ###
+//      // == select if better
+//
+//      // evaluate the offspring
+//      dtlz7( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS );
+//
+//      if( idx == 0 && VERBOSE ) {
+//        printf( "offspring fit: " );
+//        for (size_t i = 0; i < OBJS; i++)
+//          printf( "%.2f, ", offspring_fit[block_idx * OBJS + i] );
+//        printf( "\n" );
+//      }
+//
+//      // compare and copy
+//      fit_1 =  weighted_fitness( objectives + idx * OBJS, x, y );
+//      fit_2 =  weighted_fitness( offspring_fit + block_idx * OBJS, x, y );
+//
+//      if( idx == 0 && VERBOSE ) {
+//        printf( "offspring weight: %.5lf\n", fit_2 );
+//      }
+//
+//      if(fit_2 < fit_1) {
+//        for (size_t i = 0; i < PARAMS; i++)
+//          population[i + idx * PARAMS] = offspring[block_idx * PARAMS + i];
+//        for (size_t i = 0; i < OBJS; i++)
+//          objectives[i + idx * OBJS] = offspring_fit[block_idx * OBJS + i];
+//      }
+//
+//      if( idx == 0 && VERBOSE ) {
+//        printf( "new ind: " );
+//        for (size_t i = 0; i < PARAMS; i++)
+//          printf( "%.2f, ", population[i + idx * PARAMS] );
+//        printf( "\n" );
+//        for (size_t i = 0; i < OBJS; i++)
+//          printf( "%.2f, ", objectives[i + idx * OBJS] );
+//        printf( "\n" );
+//      }
+//    }
+//    __syncthreads();
+//  }
 
   return;
 }
@@ -283,7 +283,7 @@ int main() {
   srand( time( NULL ) );
   for (size_t i = 0; i < POP_SIZE; i++) {
     for (size_t j = 0; j < PARAMS; j++) {
-      population_h[i * PARAMS + j] = randomFloat();
+      population_h[i * PARAMS + j] = 0.5; //randomFloat();
     }
   }
 
