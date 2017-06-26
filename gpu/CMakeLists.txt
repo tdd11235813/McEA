@@ -16,8 +16,8 @@ set(
 # For compilation ...
 # Specify target & source files to compile it from
 cuda_add_executable(
-    mcea
-    mcea.cu
+    mcea_sync
+    mcea_sync.cu
     util.cu
     dtlz.cu
     config.h
@@ -26,9 +26,24 @@ cuda_add_executable(
     util.h
     )
 
+cuda_add_executable(
+    mcea_async
+    mcea_async.cu
+    util.cu
+    dtlz.cu
+    config.h
+    error.h
+    dtlz.cuh
+    util.h
+    )
 # For linking ...
 # Specify target & libraries to link it with
 target_link_libraries(
-    mcea
+    mcea_sync
+    ${CUDA_curand_LIBRARY}
+    )
+
+target_link_libraries(
+    mcea_async
     ${CUDA_curand_LIBRARY}
     )
