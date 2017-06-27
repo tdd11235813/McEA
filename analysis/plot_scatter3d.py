@@ -20,7 +20,7 @@ ax = fig.add_subplot(111, projection='3d')
 
 # read the optimal values
 optimal = []
-with open('./solutions_dtlz/DTLZ1.3D.pf', 'rb') as csvfile:
+with open('./solutions_dtlz/DTLZ7.3D.pf', 'rb') as csvfile:
     num_lines = sum(1 for line in csvfile)
     csvfile.seek(0)
     fitreader = csv.reader(csvfile, delimiter='\t')

@@ -1,5 +1,5 @@
 // number of generations that the alg. performs
-#define GENERATIONS 1000
+// #define GENERATIONS 1000
 // the y-size of the population grid (in individuals)
 #define POP_WIDTH 400
 // the total number of individuals in the population

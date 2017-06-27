@@ -25,6 +25,7 @@ cuda_add_executable(
     dtlz.cuh
     util.h
     )
+  # set_property( TARGET mcea_sync PROPERTY COMPILE_DEFINITIONS GENERATIONS=100 )
 
 cuda_add_executable(
     mcea_async
@@ -36,6 +37,8 @@ cuda_add_executable(
     dtlz.cuh
     util.h
     )
+  # set_property( TARGET mcea_async PROPERTY COMPILE_DEFINITIONS GENERATIONS=100 )
+
 # For linking ...
 # Specify target & libraries to link it with
 target_link_libraries(
