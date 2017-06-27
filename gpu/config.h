@@ -1,5 +1,5 @@
 // number of generations that the alg. performs
-// #define GENERATIONS 1000
+#define GENERATIONS 100
 // the y-size of the population grid (in individuals)
 #define POP_WIDTH 400
 // the total number of individuals in the population
@@ -28,4 +28,4 @@
 // the size of one block in a dimension
 #define BLOCKDIM 16
 // the scaling factor for the VADS weighting algorithm
-#define VADS_SCALE 100
+#define VADS_SCALE 500
