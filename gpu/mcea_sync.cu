@@ -132,8 +132,8 @@ __device__ double weighted_fitness( float *objectives, int x, int y ) {
 
    This kernel calculates the initial fitness of all randomly generated individuals.
 
-  \param[in,out] population an array containing all parameters of the whole population.
-  \param[in,out] objectives an array containing all objective (= fitness) values (there will be written some new ones)
+  \param[in, out] population an array containing all parameters of the whole population.
+  \param[in, out] objectives an array containing all objective (= fitness) values 
 */
 __global__ void calc_fitness( float *population, float *objectives ) {
   int x = threadIdx.x + blockIdx.x * blockDim.x;
@@ -141,7 +141,7 @@ __global__ void calc_fitness( float *population, float *objectives ) {
   int idx = x + y * (POP_WIDTH + 1);
 
   if( x < POP_WIDTH + 1 && y < POP_WIDTH )
-    dtlz1( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
+    dtlz7( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
 }
 
 /*! \brief McEA kernel
@@ -151,11 +151,13 @@ __global__ void calc_fitness( float *population, float *objectives ) {
   It uses the population and performs GENERATIONS generations, consisting of pairing, crossover, mutation, evaluation, and selection on it.
   At the end the population contains the optimized individuals.
 
-  \param[in,out] population an array containing all parameters of the whole population.
-  \param[in,out] objectives an array containing all objective values (there will be written some new ones)
+  \param[in] population_in an array containing all parameters of the whole population.
+  \param[in] objectives_in an array containing all objective values (there will be written some new ones)
+  \param[out] population_out an array where all the parameters of the new population are written
+  \param[out] objectives_out an array where all the objective values of the new population are written
   \param[in] rng_state the initialized state of the PRNG to use
 */
-__global__ void mcea( float *population, float *objectives, curandStatePhilox4_32_10_t *rng_state ) {
+__global__ void mcea( float *population_in, float *objectives_in, float *population_out, float *objectives_out, curandStatePhilox4_32_10_t *rng_state ) {
   __shared__ float offspring[PARAMS * BLOCKDIM * BLOCKDIM];
   __shared__ float offspring_fit[OBJS * BLOCKDIM * BLOCKDIM];
 
@@ -174,8 +176,8 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
     int neighbor_2 = get_neighbor( x, y, rnd_uniform_int( &rng_local, N_WIDTH * N_WIDTH ) );
 
     // compare neighbors
-    double fit_1 =  weighted_fitness( objectives + neighbor_1 * OBJS, x, y );
-    double fit_2 =  weighted_fitness( objectives + neighbor_2 * OBJS, x, y );
+    double fit_1 =  weighted_fitness( objectives_in + neighbor_1 * OBJS, x, y );
+    double fit_2 =  weighted_fitness( objectives_in + neighbor_2 * OBJS, x, y );
     int neighbor_sel = (fit_1 < fit_2)? neighbor_1 : neighbor_2;
 
     if( idx == 0 && VERBOSE )
@@ -184,10 +186,10 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
     if( idx == 0 && VERBOSE ) {
       printf( "original: " );
       for (size_t i = 0; i < PARAMS; i++)
-        printf( "%.2f, ", population[i + idx * PARAMS] );
+        printf( "%.2f, ", population_in[i + idx * PARAMS] );
       printf( "\n" );
       for (size_t i = 0; i < OBJS; i++)
-        printf( "%.2f, ", objectives[i + idx * OBJS] );
+        printf( "%.2f, ", objectives_in[i + idx * OBJS] );
       printf( "\n" );
     }
     // ### crossover ###
@@ -197,7 +199,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
       printf( "xover: %d\n", x_over_point );
 
     for (size_t i = 0; i < PARAMS; i++)
-      offspring[block_idx * PARAMS + i] = (i<x_over_point) ? population[i + idx * PARAMS] : population[i + neighbor_sel * PARAMS];
+      offspring[block_idx * PARAMS + i] = (i<x_over_point) ? population_in[i + idx * PARAMS] : population_in[i + neighbor_sel * PARAMS];
 
     if( idx == 0 && VERBOSE ) {
       printf( "crossover: " );
@@ -227,7 +229,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
     // == select if better
 
     // evaluate the offspring
-    dtlz1( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS );
+    dtlz7( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS );
 
     if( idx == 0 && VERBOSE ) {
       printf( "offspring fit: " );
@@ -237,7 +239,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
     }
 
     // compare and copy
-    fit_1 =  weighted_fitness( objectives + idx * OBJS, x, y );
+    fit_1 =  weighted_fitness( objectives_in + idx * OBJS, x, y );
     fit_2 =  weighted_fitness( offspring_fit + block_idx * OBJS, x, y );
 
     if( idx == 0 && VERBOSE )
@@ -245,18 +247,25 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
 
     if(fit_2 < fit_1) {
       for (size_t i = 0; i < PARAMS; i++)
-        population[i + idx * PARAMS] = offspring[block_idx * PARAMS + i];
+        population_out[i + idx * PARAMS] = offspring[block_idx * PARAMS + i];
       for (size_t i = 0; i < OBJS; i++)
-        objectives[i + idx * OBJS] = offspring_fit[block_idx * OBJS + i];
+        objectives_out[i + idx * OBJS] = offspring_fit[block_idx * OBJS + i];
     }
+    else {
+      for (size_t i = 0; i < PARAMS; i++)
+        population_out[i + idx * PARAMS] = population_in[i + idx * PARAMS];
+      for (size_t i = 0; i < OBJS; i++)
+        objectives_out[i + idx * OBJS] = objectives_in[i + idx * OBJS];
+    }
+
 
     if( idx == 0 && VERBOSE ) {
       printf( "new ind: " );
       for (size_t i = 0; i < PARAMS; i++)
-        printf( "%.2f, ", population[i + idx * PARAMS] );
+        printf( "%.2f, ", population_out[i + idx * PARAMS] );
       printf( "\n" );
       for (size_t i = 0; i < OBJS; i++)
-        printf( "%.2f, ", objectives[i + idx * OBJS] );
+        printf( "%.2f, ", objectives_out[i + idx * OBJS] );
       printf( "\n" );
     }
 
@@ -276,13 +285,17 @@ int main() {
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
   float *objectives_h = (float *)malloc( POP_SIZE * OBJS * sizeof(float) );
-  float *population_d;
-  float *objectives_d;
+  float *population1_d;
+  float *objectives1_d;
+  float *population2_d;
+  float *objectives2_d;
 
   curandStatePhilox4_32_10_t *d_state;
   ERR( cudaMalloc( &d_state, POP_SIZE * sizeof(curandStatePhilox4_32_10_t) ) );
-  ERR( cudaMalloc( (void**)&population_d, POP_SIZE * PARAMS * sizeof(float) ) );
-  ERR( cudaMalloc( (void**)&objectives_d, POP_SIZE * OBJS * sizeof(float) ) );
+  ERR( cudaMalloc( (void**)&population1_d, POP_SIZE * PARAMS * sizeof(float) ) );
+  ERR( cudaMalloc( (void**)&objectives1_d, POP_SIZE * OBJS * sizeof(float) ) );
+  ERR( cudaMalloc( (void**)&population2_d, POP_SIZE * PARAMS * sizeof(float) ) );
+  ERR( cudaMalloc( (void**)&objectives2_d, POP_SIZE * OBJS * sizeof(float) ) );
 
   // setup random generator
   unsigned long seed = clock();
@@ -297,7 +310,7 @@ int main() {
   }
 
   // copy data to GPU
-  ERR( cudaMemcpy( population_d, population_h, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyHostToDevice ) );
+  ERR( cudaMemcpy( population1_d, population_h, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyHostToDevice ) );
 
   // capture the start time
   cudaEvent_t     start, stop;
@@ -308,9 +321,19 @@ int main() {
   // start the kernel
   dim3 dimBlock(BLOCKDIM, BLOCKDIM);
   dim3 dimGrid(ceil((POP_WIDTH + 1) / (float)BLOCKDIM) , ceil(POP_WIDTH / (float)BLOCKDIM));
-  calc_fitness<<<dimGrid, dimBlock>>>( population_d, objectives_d );
-  for (int i = 0; i < GENERATIONS; i++)
-    mcea<<<dimGrid, dimBlock>>>( population_d, objectives_d, d_state );
+  calc_fitness<<<dimGrid, dimBlock>>>( population1_d, objectives1_d );
+  for (int i = 0; i < GENERATIONS; i++) {
+    mcea<<<dimGrid, dimBlock>>>( population1_d, objectives1_d, population2_d, objectives2_d, d_state );
+
+    // switch buffers
+    float *tmp = population1_d;
+    population1_d = population2_d;
+    population2_d = tmp;
+
+    tmp = objectives1_d;
+    objectives1_d = objectives2_d;
+    objectives2_d = tmp;
+  }
 
   // get stop time, and display the timing results
   ERR( cudaEventRecord( stop, 0 ) );
@@ -320,8 +343,8 @@ int main() {
   printf( "duration:  %f ms\n", elapsedTime );
 
   // copy data from GPU
-  ERR( cudaMemcpy( population_h, population_d, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyDeviceToHost ) );
-  ERR( cudaMemcpy( objectives_h, objectives_d, POP_SIZE * OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
+  ERR( cudaMemcpy( population_h, population1_d, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyDeviceToHost ) );
+  ERR( cudaMemcpy( objectives_h, objectives1_d, POP_SIZE * OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
 
   // write the results to file
   write_objectives( objectives_h );
@@ -333,6 +356,8 @@ int main() {
   ERR( cudaEventDestroy( start ) );
   ERR( cudaEventDestroy( stop ) );
 
-  ERR( cudaFree( population_d ) );
-  ERR( cudaFree( objectives_d ) );
+  ERR( cudaFree( population1_d ) );
+  ERR( cudaFree( objectives1_d ) );
+  ERR( cudaFree( population2_d ) );
+  ERR( cudaFree( objectives2_d ) );
 }

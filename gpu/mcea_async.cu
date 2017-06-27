@@ -151,7 +151,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
   if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {
     rng_local = *(rng_state + idx);
     // ### evaluation ###
-    dtlz1( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
+    dtlz7( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
   }
 
   // main loop
@@ -217,7 +217,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
       // == select if better
 
       // evaluate the offspring
-      dtlz1( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS );
+      dtlz7( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS );
 
       if( idx == 0 && VERBOSE ) {
         printf( "offspring fit: " );
