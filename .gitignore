@@ -15,7 +15,9 @@
 
 old_bin/
 gpu/doc/
+gpu/bin/
 cpu/doc/
+cpu/bin/
 analysis/solutions_dtlz/
 mcea
 mcea_cpu
