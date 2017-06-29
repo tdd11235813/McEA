@@ -2,19 +2,19 @@
 // number of generations that the alg. performs
 // #define GENERATIONS 1000
 // the y-size of the population grid (in individuals)
-#define POP_WIDTH 400
+// #define POP_WIDTH 400
 // the number of parameters for the optimization problen (DTLZ-n)
 // can be adjusted at will, scales the memory usage linearly
-#define PARAMS 20
+// #define PARAMS 20
 // the radius of the neighborhood around an individual
 // the neighborhood is square at all times
-#define N_RAD 2
+// #define N_RAD 2
 // the number of threads to use in OpenMP
-#define THREADS 8
+// #define THREADS 8
 // the scaling factor for the VADS weighting algorithm
-#define VADS_SCALE 100
+// #define VADS_SCALE 100
 // the base of the filename where the results shall be written
-#define OUTFILE "test"
+// #define OUTFILE "test"
 
 
 // the total number of individuals in the population
