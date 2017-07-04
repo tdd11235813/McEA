@@ -262,14 +262,16 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
   Classic main function. It allocates all memory, generates the population, starts the kernel and collects the results.
   All parameter changes are made via the #define statements
 */
-int main() {
+int main(int argc, char *argv[]) {
 
   // get the output folder
   char *folder;
   if(argc > 1)
     folder = argv[1];
-  else
-    folder = "";
+  else {
+    char empty[1] = "";
+    folder = empty;
+  }
 
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );

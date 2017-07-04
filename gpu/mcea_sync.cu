@@ -286,8 +286,10 @@ int main( int argc, char *argv[] ) {
   char *folder;
   if(argc > 1)
     folder = argv[1];
-  else
-    folder = "";
+  else {
+    char empty[1] = "";
+    folder = empty;
+  }
 
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
@@ -355,7 +357,7 @@ int main( int argc, char *argv[] ) {
 
   // write the results to file
   write_objectives( objectives_h, folder );
-  write_info( elapsedTim, folder );
+  write_info( elapsedTime, folder );
 
   // free resources
   free( population_h );
