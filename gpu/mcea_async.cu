@@ -264,6 +264,13 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
 */
 int main() {
 
+  // get the output folder
+  char *folder;
+  if(argc > 1)
+    folder = argv[1];
+  else
+    folder = "";
+
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
   float *objectives_h = (float *)malloc( POP_SIZE * OBJS * sizeof(float) );
@@ -313,8 +320,8 @@ int main() {
   ERR( cudaMemcpy( objectives_h, objectives_d, POP_SIZE * OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
 
   // write the results to file
-  write_objectives( objectives_h );
-  write_info( elapsedTime );
+  write_objectives( objectives_h, folder );
+  write_info( elapsedTime, folder );
 
   // free resources
   free( population_h );

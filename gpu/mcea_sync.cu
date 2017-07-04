@@ -280,7 +280,14 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
   Classic main function. It allocates all memory, generates the population, starts the kernel and collects the results.
   All parameter changes are made via the #define statements
 */
-int main() {
+int main( int argc, char *argv[] ) {
+
+  // get the output folder
+  char *folder;
+  if(argc > 1)
+    folder = argv[1];
+  else
+    folder = "";
 
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
@@ -347,8 +354,8 @@ int main() {
   ERR( cudaMemcpy( objectives_h, objectives1_d, POP_SIZE * OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
 
   // write the results to file
-  write_objectives( objectives_h );
-  write_info( elapsedTime );
+  write_objectives( objectives_h, folder );
+  write_info( elapsedTim, folder );
 
   // free resources
   free( population_h );

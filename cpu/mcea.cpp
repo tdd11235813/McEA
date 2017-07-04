@@ -259,7 +259,14 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
   Classic main function. It allocates all memory, generates the population, starts the kernel and collects the results.
   All parameter changes are made via the #define statements
 */
-int main() {
+int main( int argc, char *argv[] ) {
+
+  // get the output folder
+  string folder;
+  if(argc > 1)
+    folder = string(argv[1]);
+  else
+    folder = string("");
 
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
@@ -294,8 +301,8 @@ int main() {
   printf( "duration: %f\n", elapsed );
 
   // write the results to file
-  write_objectives( objectives_h );
-  write_info( elapsed );
+  write_objectives( objectives_h, folder );
+  write_info( elapsed, folder );
 
   // free resources
   free( population_h );

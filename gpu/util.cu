@@ -53,11 +53,13 @@ E. g. first all objectives of individual 1, next all of individual 2, ...
 The param OUTFILE is used as the filename and the extension '.obj' is appended.
 
 \param objectives a pointer to the objectives array
+\param folder the folder where the results are saved
 */
-void write_objectives( float *objectives ) {
+void write_objectives( float *objectives, char *folder ) {
 
-  char filename[strlen(OUTFILE) + 4];
-  strcpy( filename, OUTFILE );
+  char filename[strlen(folder) + strlen(OUTFILE) + 4];
+  strcpy( filename, folder );
+  strcat( filename, OUTFILE );
   strcat( filename, ".obj" );
 
   FILE *out_file = fopen( filename, "w");
@@ -81,11 +83,13 @@ The runtime is written in ms.
 The param OUTFILE is used as the filename and the extension '.obj' is appended.
 
 \param runtime the duration of the calculations (with data copy, without file writing)
+\param folder the folder where the results are saved
 */
-void write_info( float runtime ) {
+void write_info( float runtime, char *folder ) {
 
-  char filename[strlen(OUTFILE) + 5];
-  strcpy( filename, OUTFILE );
+  char filename[strlen(folder) + strlen(OUTFILE) + 4];
+  strcpy( filename, folder );
+  strcat( filename, OUTFILE );
   strcat( filename, ".info" );
 
   FILE *out_file = fopen( filename, "w");
