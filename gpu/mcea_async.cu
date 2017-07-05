@@ -137,8 +137,9 @@ __device__ double weighted_fitness( float *objectives, int x, int y ) {
   \param[in,out] population an array containing all parameters of the whole population.
   \param[in,out] objectives an array containing all objective values (there will be written some new ones)
   \param[in] rng_state the initialized state of the PRNG to use
+  \param[in] dtlz_ptr pointer to the DTLZ function to use
 */
-__global__ void mcea( float *population, float *objectives, curandStatePhilox4_32_10_t *rng_state ) {
+__global__ void mcea( float *population, float *objectives, curandStatePhilox4_32_10_t *rng_state, void (*dtlz_ptr)(float*, float*, int, int) ) {
   __shared__ float offspring[PARAMS * BLOCKDIM * BLOCKDIM];
   __shared__ float offspring_fit[OBJS * BLOCKDIM * BLOCKDIM];
 
@@ -151,7 +152,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
   if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {
     rng_local = *(rng_state + idx);
     // ### evaluation ###
-    dtlz7( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
+    (*dtlz_ptr)( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
   }
 
   // main loop
@@ -217,7 +218,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
       // == select if better
 
       // evaluate the offspring
-      dtlz7( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS );
+      (*dtlz_ptr)( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS );
 
       if( idx == 0 && VERBOSE ) {
         printf( "offspring fit: " );
@@ -273,6 +274,9 @@ int main(int argc, char *argv[]) {
     folder = empty;
   }
 
+  // pointers to the dtlz functions
+  void (*dtlz_ptr[])(float*,float*,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
+
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
   float *objectives_h = (float *)malloc( POP_SIZE * OBJS * sizeof(float) );
@@ -308,7 +312,7 @@ int main(int argc, char *argv[]) {
   // start the kernel
   dim3 dimBlock(BLOCKDIM, BLOCKDIM);
   dim3 dimGrid(ceil((POP_WIDTH + 1) / (float)BLOCKDIM) , ceil(POP_WIDTH / (float)BLOCKDIM));
-  mcea<<<dimGrid, dimBlock>>>( population_d, objectives_d, d_state );
+  mcea<<<dimGrid, dimBlock>>>( population_d, objectives_d, d_state, dtlz_ptr[DTLZ]);
 
   // get stop time, and display the timing results
   ERR( cudaEventRecord( stop, 0 ) );

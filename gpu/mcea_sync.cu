@@ -134,14 +134,15 @@ __device__ double weighted_fitness( float *objectives, int x, int y ) {
 
   \param[in, out] population an array containing all parameters of the whole population.
   \param[in, out] objectives an array containing all objective (= fitness) values 
+  \param[in] dtlz_ptr pointer to the DTLZ function to use
 */
-__global__ void calc_fitness( float *population, float *objectives ) {
+__global__ void calc_fitness( float *population, float *objectives, void (*dtlz_ptr)(float *, float*, int, int) ) {
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
   int idx = x + y * (POP_WIDTH + 1);
 
   if( x < POP_WIDTH + 1 && y < POP_WIDTH )
-    dtlz7( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
+    (*dtlz_ptr)( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
 }
 
 /*! \brief McEA kernel
@@ -156,8 +157,9 @@ __global__ void calc_fitness( float *population, float *objectives ) {
   \param[out] population_out an array where all the parameters of the new population are written
   \param[out] objectives_out an array where all the objective values of the new population are written
   \param[in] rng_state the initialized state of the PRNG to use
+  \param[in] dtlz_ptr pointer to the DTLZ function to use
 */
-__global__ void mcea( float *population_in, float *objectives_in, float *population_out, float *objectives_out, curandStatePhilox4_32_10_t *rng_state ) {
+__global__ void mcea( float *population_in, float *objectives_in, float *population_out, float *objectives_out, curandStatePhilox4_32_10_t *rng_state, void (*dtlz_ptr)(float *, float*, int, int) ) {
   __shared__ float offspring[PARAMS * BLOCKDIM * BLOCKDIM];
   __shared__ float offspring_fit[OBJS * BLOCKDIM * BLOCKDIM];
 
@@ -229,7 +231,7 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
     // == select if better
 
     // evaluate the offspring
-    dtlz7( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS );
+    (*dtlz_ptr)( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS );
 
     if( idx == 0 && VERBOSE ) {
       printf( "offspring fit: " );
@@ -291,6 +293,9 @@ int main( int argc, char *argv[] ) {
     folder = empty;
   }
 
+  // pointers to the dtlz functions
+  void (*dtlz_ptr[])(float*,float*,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
+
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
   float *objectives_h = (float *)malloc( POP_SIZE * OBJS * sizeof(float) );
@@ -330,9 +335,9 @@ int main( int argc, char *argv[] ) {
   // start the kernel
   dim3 dimBlock(BLOCKDIM, BLOCKDIM);
   dim3 dimGrid(ceil((POP_WIDTH + 1) / (float)BLOCKDIM) , ceil(POP_WIDTH / (float)BLOCKDIM));
-  calc_fitness<<<dimGrid, dimBlock>>>( population1_d, objectives1_d );
+  calc_fitness<<<dimGrid, dimBlock>>>( population1_d, objectives1_d, dtlz_ptr[DTLZ] );
   for (int i = 0; i < GENERATIONS; i++) {
-    mcea<<<dimGrid, dimBlock>>>( population1_d, objectives1_d, population2_d, objectives2_d, d_state );
+    mcea<<<dimGrid, dimBlock>>>( population1_d, objectives1_d, population2_d, objectives2_d, d_state, dtlz_ptr[DTLZ] );
 
     // switch buffers
     float *tmp = population1_d;

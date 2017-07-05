@@ -34,3 +34,5 @@
 #define VERBOSE false
 // the size of one block in a dimension
 #define BLOCKDIM 16
+// calculate index from DTLZ number
+#define DTLZ (DTLZ_NUM - 1)
