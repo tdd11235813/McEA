@@ -47,6 +47,6 @@ pareto_front_ind = tools.sortLogNondominated(population, len(population), True)
 
 pareto_front = set(map(lambda x: x.fitness.values, pareto_front_ind))
 
-with open(outfile, 'w') as csvfile:
+with open(outfile, 'w+') as csvfile:
     pfwriter = csv.writer(csvfile, delimiter='\t')
     map(pfwriter.writerow, pareto_front)

@@ -15,6 +15,8 @@
 // #define VADS_SCALE 100
 // the base of the filename where the results shall be written
 // #define OUTFILE "test"
+// version of the DTLZ problem suite to use
+// #define DTLZ_NUM 5
 
 
 // the total number of individuals in the population
@@ -32,3 +34,5 @@
 // if true it writes the evolution of individual 0 in the population
 // don't use this with a big number of GENERATIONS
 #define VERBOSE false
+// calculate the index for the DTLZ_NUM
+#define DTLZ (DTLZ_NUM - 1)

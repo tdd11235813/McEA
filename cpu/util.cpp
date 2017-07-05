@@ -101,6 +101,7 @@ void write_info( float runtime, string folder) {
 
   fprintf( out_file, "name:\t\t%s\n", filename.c_str() );
   fprintf( out_file, "runtime:\t%f s\n", runtime );
+  fprintf( out_file, "dtlz problem:\t%d\n", DTLZ_NUM );
   fprintf( out_file, "threads:\t%d\n", THREADS );
   fprintf( out_file, "generations:\t%d\n", GENERATIONS );
   fprintf( out_file, "pop_width:\t%d\n", POP_WIDTH );

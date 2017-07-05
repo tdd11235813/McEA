@@ -116,13 +116,14 @@ double weighted_fitness( float *objectives, int x, int y ) {
 void mcea( float *population, float *objectives, default_random_engine rng_state ) {
   float offspring[PARAMS];
   float offspring_fit[OBJS];
+  void (*dtlz_ptr[])(float*,float*,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
 
   omp_set_num_threads( THREADS );
 
   // ### evaluation ###
   #pragma omp parallel for
   for (size_t idx = 0; idx < POP_SIZE + 1; idx++) {
-      dtlz7( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
+      (*dtlz_ptr[DTLZ])( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
   }
 
   // init random distributions
@@ -210,7 +211,7 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
         // == select if better
 
         // evaluate the offspring
-        dtlz7( offspring, offspring_fit, PARAMS, OBJS );
+        (*dtlz_ptr[DTLZ])( offspring, offspring_fit, PARAMS, OBJS );
 
         if( idx == 0 && VERBOSE ) {
           printf( "offspring fit: " );
@@ -292,7 +293,7 @@ int main( int argc, char *argv[] ) {
   // start the algorithm
   mcea( population_h, objectives_h, d_state );
   // for (size_t i = 0; i < POP_SIZE; i++) {
-  //   dtlz5( population_h + i*PARAMS, objectives_h + i*OBJS, PARAMS, OBJS );
+  //   (*dtlz_ptr[DTLZ])( population_h + i*PARAMS, objectives_h + i*OBJS, PARAMS, OBJS );
   // }
 
   clock_gettime(CLOCK_MONOTONIC, &finish);
