@@ -98,6 +98,7 @@ void write_info( float runtime, char *folder ) {
 
   fprintf( out_file, "name:\t\t%s\n", filename );
   fprintf( out_file, "runtime:\t%f ms\n", runtime );
+  fprintf( out_file, "dtlz problem:\t%d\n", DTLZ_NUM );
   fprintf( out_file, "generations:\t%d\n", GENERATIONS );
   fprintf( out_file, "pop_width:\t%d\n", POP_WIDTH );
   fprintf( out_file, "pop_size:\t%d\n", POP_SIZE );
