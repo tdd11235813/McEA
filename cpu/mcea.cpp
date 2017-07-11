@@ -264,10 +264,15 @@ int main( int argc, char *argv[] ) {
 
   // get the output folder
   string folder;
-  if(argc > 1)
+  string run;
+  if(argc > 1) {
     folder = string(argv[1]);
-  else
+    run = string(argv[2]);  
+  }
+  else {
     folder = string("");
+    run = string("0");
+  }
 
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
@@ -302,8 +307,8 @@ int main( int argc, char *argv[] ) {
   printf( "duration: %f\n", elapsed );
 
   // write the results to file
-  write_objectives( objectives_h, folder );
-  write_info( elapsed, folder );
+  write_objectives( objectives_h, folder, run);
+  write_info( elapsed, folder, run );
 
   // free resources
   free( population_h );

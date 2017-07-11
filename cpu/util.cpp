@@ -58,11 +58,13 @@ The param OUTFILE is used as the filename and the extension '.obj' is appended.
 \param objectives a pointer to the objectives array
 \param folder the folder where the results are saved
 */
-void write_objectives( float *objectives, string folder) {
+void write_objectives( float *objectives, string folder, string run) {
 
   string filename = folder;
   string extension = ".obj";
   filename += OUTFILE;
+  filename += string("_");
+  filename += run;
   filename += extension;
 
   FILE *out_file = fopen( filename.c_str(), "w");
@@ -88,11 +90,13 @@ The param OUTFILE is used as the filename and the extension '.obj' is appended.
 \param runtime the duration of the calculations (with data copy, without file writing)
 \param folder the folder where the results are saved
 */
-void write_info( float runtime, string folder) {
+void write_info( float runtime, string folder, string run) {
 
   string filename = folder;
   string extension = ".info";
   filename += OUTFILE;
+  filename += string("_");
+  filename += run;
   filename += extension;
 
   FILE *out_file = fopen( filename.c_str(), "w");

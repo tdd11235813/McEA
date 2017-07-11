@@ -11,7 +11,7 @@ void printVector( float *, int );
 
 float get_objective_sum( float *, int , int );
 
-void write_objectives( float *objectives, string folder );
+void write_objectives( float *objectives, string folder, string run );
 
-void write_info( float runtime, string folder );
+void write_info( float runtime, string folder, string run );
 #endif
