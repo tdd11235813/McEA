@@ -13,6 +13,9 @@
 #include "dtlz.cuh"
 #include "config.h"
 
+  // pointers to the dtlz functions
+  __device__ void (*dtlz_funcs[])(float*,float*,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
+
 /*! \brief neighbor calculation
 
   For a given neighbor index this calculates the neighbors global position.
@@ -134,12 +137,12 @@ __device__ double weighted_fitness( float *objectives, int x, int y ) {
 
   \param[in, out] population an array containing all parameters of the whole population.
   \param[in, out] objectives an array containing all objective (= fitness) values 
-  \param[in] dtlz_ptr pointer to the DTLZ function to use
 */
-__global__ void calc_fitness( float *population, float *objectives, void (*dtlz_ptr)(float *, float*, int, int) ) {
+__global__ void calc_fitness( float *population, float *objectives ) {
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
   int idx = x + y * (POP_WIDTH + 1);
+  void (*dtlz_ptr)(float*, float*, int, int) = dtlz_funcs[DTLZ];
 
   if( x < POP_WIDTH + 1 && y < POP_WIDTH )
     (*dtlz_ptr)( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
@@ -157,11 +160,11 @@ __global__ void calc_fitness( float *population, float *objectives, void (*dtlz_
   \param[out] population_out an array where all the parameters of the new population are written
   \param[out] objectives_out an array where all the objective values of the new population are written
   \param[in] rng_state the initialized state of the PRNG to use
-  \param[in] dtlz_ptr pointer to the DTLZ function to use
 */
-__global__ void mcea( float *population_in, float *objectives_in, float *population_out, float *objectives_out, curandStatePhilox4_32_10_t *rng_state, void (*dtlz_ptr)(float *, float*, int, int) ) {
+__global__ void mcea( float *population_in, float *objectives_in, float *population_out, float *objectives_out, curandStatePhilox4_32_10_t *rng_state ) {
   __shared__ float offspring[PARAMS * BLOCKDIM * BLOCKDIM];
   __shared__ float offspring_fit[OBJS * BLOCKDIM * BLOCKDIM];
+  void (*dtlz_ptr)(float*, float*, int, int) = dtlz_funcs[DTLZ];
 
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -286,15 +289,19 @@ int main( int argc, char *argv[] ) {
 
   // get the output folder
   char *folder;
-  if(argc > 1)
+  char *run;
+  if(argc > 1) {
     folder = argv[1];
-  else {
+    run = argv[2];
+  } else {
     char empty[1] = "";
+    char zero[2] = "0";
     folder = empty;
+    run = zero;
   }
-
-  // pointers to the dtlz functions
-  void (*dtlz_ptr[])(float*,float*,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
+  char runtype[ strlen(run) + 5];
+  strcpy( runtype, "sync_" );
+  strcat( runtype, run );
 
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
@@ -335,9 +342,9 @@ int main( int argc, char *argv[] ) {
   // start the kernel
   dim3 dimBlock(BLOCKDIM, BLOCKDIM);
   dim3 dimGrid(ceil((POP_WIDTH + 1) / (float)BLOCKDIM) , ceil(POP_WIDTH / (float)BLOCKDIM));
-  calc_fitness<<<dimGrid, dimBlock>>>( population1_d, objectives1_d, dtlz_ptr[DTLZ] );
+  calc_fitness<<<dimGrid, dimBlock>>>( population1_d, objectives1_d );
   for (int i = 0; i < GENERATIONS; i++) {
-    mcea<<<dimGrid, dimBlock>>>( population1_d, objectives1_d, population2_d, objectives2_d, d_state, dtlz_ptr[DTLZ] );
+    mcea<<<dimGrid, dimBlock>>>( population1_d, objectives1_d, population2_d, objectives2_d, d_state );
 
     // switch buffers
     float *tmp = population1_d;
@@ -361,8 +368,8 @@ int main( int argc, char *argv[] ) {
   ERR( cudaMemcpy( objectives_h, objectives1_d, POP_SIZE * OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
 
   // write the results to file
-  write_objectives( objectives_h, folder );
-  write_info( elapsedTime, folder );
+  write_objectives( objectives_h, folder, runtype );
+  write_info( elapsedTime, folder, runtype );
 
   // free resources
   free( population_h );
