@@ -302,9 +302,9 @@ int main( int argc, char *argv[] ) {
   // }
 
   clock_gettime(CLOCK_MONOTONIC, &finish);
-  elapsed = (finish.tv_sec - start.tv_sec);
-  elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-  printf( "duration: %f\n", elapsed );
+  elapsed = (finish.tv_sec - start.tv_sec) * 1000;
+  elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000.0;
+  printf( "duration: %lf\n", elapsed );
 
   // write the results to file
   write_objectives( objectives_h, folder, run);

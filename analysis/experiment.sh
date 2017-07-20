@@ -57,13 +57,16 @@ len=`echo $fronts | wc -w`
 for front in $fronts; do
   infos=`echo $front | sed -e 's/pareto_front/population/' -e 's/\.pf/\.info/'`
   dtlz_num=`grep dtlz_problem $infos | sed -e 's/dtlz_problem:[[:space:]]*//'`
+  runtime=`grep runtime $infos | sed -e 's/runtime:[[:space:]]*\([0-9]*\.[0-9]*\) ms/\1/'`
   ffile=${front##*/}
   ffile=${ffile%.pf}
+  metric_file=$2/metrics/$ffile.metrics
   echo "[$counter/$len] calc metrics: $ffile"
   mvn -pl jmetal-exec exec:java -f ~/bin/jMetal \
     -Dexec.mainClass="org.uma.jmetal.qualityIndicator.CommandLineIndicatorRunner" \
     -Dexec.args="ALL $solution_folder/DTLZ$dtlz_num.3D.pf $front TRUE" \
-    2> /dev/null | head -n18 | tail -n8 1> $2/metrics/$ffile.metrics
+    2> /dev/null | head -n18 | tail -n8 1> $metric_file
+  echo "RT: $runtime" >> $metric_file
 
   (( counter+=1 ))
 done

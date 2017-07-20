@@ -104,7 +104,7 @@ void write_info( float runtime, string folder, string run) {
     printf("file: %s cannot be opened.\n", filename.c_str() );
 
   fprintf( out_file, "name:\t\t%s\n", filename.c_str() );
-  fprintf( out_file, "runtime:\t%f s\n", runtime );
+  fprintf( out_file, "runtime:\t%f ms\n", runtime );
   fprintf( out_file, "dtlz_problem:\t%d\n", DTLZ_NUM );
   fprintf( out_file, "threads:\t%d\n", THREADS );
   fprintf( out_file, "generations:\t%d\n", GENERATIONS );
