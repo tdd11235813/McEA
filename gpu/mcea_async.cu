@@ -13,6 +13,9 @@
 #include "dtlz.cuh"
 #include "config.h"
 
+  // pointers to the dtlz functions
+  __device__ void (*dtlz_funcs[])(float*,float*,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
+
 /*! \brief neighbor calculation
 
   For a given neighbor index this calculates the neighbors global position.
@@ -137,11 +140,11 @@ __device__ double weighted_fitness( float *objectives, int x, int y ) {
   \param[in,out] population an array containing all parameters of the whole population.
   \param[in,out] objectives an array containing all objective values (there will be written some new ones)
   \param[in] rng_state the initialized state of the PRNG to use
-  \param[in] dtlz_ptr pointer to the DTLZ function to use
 */
-__global__ void mcea( float *population, float *objectives, curandStatePhilox4_32_10_t *rng_state, void (*dtlz_ptr)(float*, float*, int, int) ) {
+__global__ void mcea( float *population, float *objectives, curandStatePhilox4_32_10_t *rng_state ) {
   __shared__ float offspring[PARAMS * BLOCKDIM * BLOCKDIM];
   __shared__ float offspring_fit[OBJS * BLOCKDIM * BLOCKDIM];
+  void (*dtlz_ptr)(float*, float*, int, int) = dtlz_funcs[DTLZ];
 
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -265,17 +268,21 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
 */
 int main(int argc, char *argv[]) {
 
-  // get the output folder
+  // get the output folder the run number and type
   char *folder;
-  if(argc > 1)
+  char *run;
+  if(argc > 1) {
     folder = argv[1];
-  else {
+    run = argv[2];
+  } else {
     char empty[1] = "";
+    char zero[2] = "0";
     folder = empty;
+    run = zero;
   }
-
-  // pointers to the dtlz functions
-  void (*dtlz_ptr[])(float*,float*,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
+  char runtype[ strlen(run) + 6];
+  strcpy( runtype, "async_" );
+  strcat( runtype, run );
 
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
@@ -312,7 +319,7 @@ int main(int argc, char *argv[]) {
   // start the kernel
   dim3 dimBlock(BLOCKDIM, BLOCKDIM);
   dim3 dimGrid(ceil((POP_WIDTH + 1) / (float)BLOCKDIM) , ceil(POP_WIDTH / (float)BLOCKDIM));
-  mcea<<<dimGrid, dimBlock>>>( population_d, objectives_d, d_state, dtlz_ptr[DTLZ]);
+  mcea<<<dimGrid, dimBlock>>>( population_d, objectives_d, d_state );
 
   // get stop time, and display the timing results
   ERR( cudaEventRecord( stop, 0 ) );
@@ -326,8 +333,8 @@ int main(int argc, char *argv[]) {
   ERR( cudaMemcpy( objectives_h, objectives_d, POP_SIZE * OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
 
   // write the results to file
-  write_objectives( objectives_h, folder );
-  write_info( elapsedTime, folder );
+  write_objectives( objectives_h, folder, runtype );
+  write_info( elapsedTime, folder, runtype);
 
   // free resources
   free( population_h );

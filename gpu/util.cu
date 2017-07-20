@@ -55,11 +55,13 @@ The param OUTFILE is used as the filename and the extension '.obj' is appended.
 \param objectives a pointer to the objectives array
 \param folder the folder where the results are saved
 */
-void write_objectives( float *objectives, char *folder ) {
+void write_objectives( float *objectives, char *folder, char* run ) {
 
-  char filename[strlen(folder) + strlen(OUTFILE) + 4];
+  char filename[strlen(folder) + strlen(OUTFILE) + strlen(run) + 5];
   strcpy( filename, folder );
   strcat( filename, OUTFILE );
+  strcat( filename, "_" );
+  strcat( filename, run );
   strcat( filename, ".obj" );
 
   FILE *out_file = fopen( filename, "w");
@@ -85,11 +87,13 @@ The param OUTFILE is used as the filename and the extension '.obj' is appended.
 \param runtime the duration of the calculations (with data copy, without file writing)
 \param folder the folder where the results are saved
 */
-void write_info( float runtime, char *folder ) {
+void write_info( float runtime, char *folder, char* run ) {
 
-  char filename[strlen(folder) + strlen(OUTFILE) + 4];
+  char filename[strlen(folder) + strlen(OUTFILE) + strlen(run) + 5];
   strcpy( filename, folder );
   strcat( filename, OUTFILE );
+  strcat( filename, "_" );
+  strcat( filename, run );
   strcat( filename, ".info" );
 
   FILE *out_file = fopen( filename, "w");
@@ -98,7 +102,7 @@ void write_info( float runtime, char *folder ) {
 
   fprintf( out_file, "name:\t\t%s\n", filename );
   fprintf( out_file, "runtime:\t%f ms\n", runtime );
-  fprintf( out_file, "dtlz problem:\t%d\n", DTLZ_NUM );
+  fprintf( out_file, "dtlz_problem:\t%d\n", DTLZ_NUM );
   fprintf( out_file, "generations:\t%d\n", GENERATIONS );
   fprintf( out_file, "pop_width:\t%d\n", POP_WIDTH );
   fprintf( out_file, "pop_size:\t%d\n", POP_SIZE );
