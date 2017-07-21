@@ -1,3 +1,5 @@
+library(effsize) # for Vargha and Delaney A^12
+
 dirs <- commandArgs(trailingOnly = TRUE)
 
 files <- character()
@@ -71,5 +73,23 @@ rownames(pval_mcea_arr) <- metric_names
 
 ## POST HOC TEST: TukeyHSD
 
-tuk_res_list <- lapply(aov_mcea_list, function(aov) TukeyHSD(aov)[[1]])
-print(tuk_res_list[[1]][, 4])
+# different mcea alg
+tuk_res_list <- lapply(aov_mcea_list, function(aov) TukeyHSD(aov)[[1]][, 4])
+tuk_res_mat <- matrix(unlist(tuk_res_list), ncol=3, byrow=TRUE)
+rownames(tuk_res_mat) <- metric_names
+colnames(tuk_res_mat) <- names(tuk_res_list[[1]])
+
+### Testing effect size
+
+# get pairwise combinations of testsettings
+mcea_com <- combn(levels(factor(metric_df$algor)), 2)
+VD_res <- matrix(unlist(lapply(metric_names, function(metric) {
+  apply(mcea_com, 2, function(comb) {
+    selection <- metric_df$algor %in% comb
+    VD.A(metric_df[[metric]][selection], metric_df$algor[selection])$estimate
+  })
+})), ncol=3, byrow=TRUE)
+rownames(VD_res) <- metric_names
+colnames(VD_res) <- apply(mcea_com, 2, function(algs) paste(algs[1], algs[2]))
+
+print(VD_res)
