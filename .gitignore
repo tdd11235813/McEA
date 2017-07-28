@@ -8,6 +8,10 @@
 *.nvvp
 *.obj
 *.info
+*VAR
+*FUN
+*.tsv
+*.log
 **/CMakeCache.txt
 **/CMakeFiles/
 **/Makefile
