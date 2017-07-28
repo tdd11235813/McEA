@@ -12,6 +12,7 @@
 *FUN
 *.tsv
 *.log
+*.class
 **/CMakeCache.txt
 **/CMakeFiles/
 **/Makefile

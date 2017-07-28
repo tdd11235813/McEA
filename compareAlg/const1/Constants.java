@@ -6,7 +6,7 @@ class Constants {
   public static final int parameters = 20;
   public static final int objectives = 3;
   public static final int dtlzNum = 7;
-  public static final String outFile = "nsgaii";
+  public static final String outFile = "out";
   
   // derived constants
   public static final int populationSize = popWidth * (popWidth + 1);
