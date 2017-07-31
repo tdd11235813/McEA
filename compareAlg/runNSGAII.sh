@@ -1,1 +1,0 @@
-java -cp ~/bin/jMetal/jmetal-exec/target/jmetal-exec-5.4-SNAPSHOT-jar-with-dependencies.jar:. NewNSGAIIRunner org.uma.jmetal.problem.multiobjective.dtlz.DTLZ7 ~/cloud/promotion/code/McEA/analysis/solutions_dtlz/DTLZ7.3D.pf

@@ -1,41 +1,24 @@
 #! /bin/bash
 solution_folder="/home/est/cloud/promotion/code/McEA/analysis/solutions_dtlz/"
 
-if [ $# -ne 2 ]; then
-  echo "usage: ${0} <bin-folder> <out-folder>"
+if [ $# -ne 3 ]; then
+  echo "usage: ${0} <bin or javaconfig-folder> <out-folder> <run-script>"
   exit
 fi
 
 # test for required scripts
 if [ ! -f ./bestPF.py ]; then
-  echo "Please start the script from its parent folder. The scripts bestPF.py and plot_scatter3d.py are required."
+  echo "Please start the script from its parent folder. The script bestPF.py is required."
   exit
 fi
 
-# prepare folder structure
-mkdir -p $2/population
-mkdir -p $2/pareto_front
-mkdir -p $2/visualisation
-mkdir -p $2/metrics
-mkdir -p $2/statistics
-
-# run all the binaries
-iterations=30
-counter=1
-binaries=`find $1 -name "mcea*"`
-len=`echo $binaries | wc -w`
-(( len = len * iterations ))
-
-for bin in $binaries; do
-  for run in `seq -w $iterations`; do
-    bfile=${bin##*/}
-    echo "[$counter/$len] exec bin: ${bfile}_$run"
-    $bin $2/population/ $run &> /dev/null
-    (( counter+=1 ))
-  done
-done
+# run the experiments
+./$3 $1 $2
+# correct the missing tabs for jMetal
+sed -i -e 's/ /	/g' `find $2/population -name "*.obj"`
 
 # calculate the PFs
+mkdir -p $2/pareto_front
 counter=1
 results=`find $2/population -name "*.obj"`
 len=`echo $results | wc -w`
@@ -50,6 +33,7 @@ for pop in $results; do
 done
 
 # calculate the metrics
+mkdir -p $2/metrics
 counter=1
 fronts=`find $2/pareto_front -name "*.pf"`
 len=`echo $fronts | wc -w`
