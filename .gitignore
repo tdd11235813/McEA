@@ -19,12 +19,13 @@
 **/cmake_install.cmake
 
 old_bin/
-gpu/doc/
-gpu/bin/
-cpu/doc/
-cpu/bin/
 analysis/solutions_dtlz/
 mcea
 mcea_cpu
 mcea_cpu_dbg
 mcea_dbg
+
+test/
+build/
+doc/gpu/
+doc/cpu/

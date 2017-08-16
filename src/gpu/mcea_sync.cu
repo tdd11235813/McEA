@@ -1,4 +1,4 @@
-/*! \file mcea.cu
+/*! \file mcea_sync.cu
   Main algorithm. Does all the memory management and starts the kernels.
 */
 #include "cuda.h"
@@ -13,7 +13,7 @@
 #include "dtlz.cuh"
 #include "config.h"
 
-  // pointers to the dtlz functions
+  //! pointers to the dtlz functions
   __device__ void (*dtlz_funcs[])(float*,float*,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
 
 /*! \brief neighbor calculation
@@ -54,12 +54,12 @@ __global__ void rand_init( curandStatePhilox4_32_10_t  *state, unsigned long see
   curand_init(seed, idx, 0, &state[idx]);
 }
 
-/* \brief generates a random uniform int
+/*! \brief generates a random uniform int
 
   Draws from a uniform distribution in [0, 1] and converts it to an integer in the range [0, values-1].
 
-  \param state[in] the PRNG state to use
-  \param values[in] the number of possible values for the uniform distribution
+  \param[in] state the PRNG state to use
+  \param[in] values the number of possible values for the uniform distribution
 
   \return an integer in the specified range
 */
@@ -68,7 +68,7 @@ __device__ int rnd_uniform_int( curandStatePhilox4_32_10_t  *state, int values )
     return (int)truncf( curand_uniform( state ) * ( values - 0.000001) );
 }
 
-/* \brief calculates the dot product for 2 vectors
+/*! \brief calculates the dot product for 2 vectors
 
    Interprets the values at the pointers x and y as vectors of size 3 and calculates the dot product from them.
    This is only aplicable for vectors of size 3!
@@ -82,7 +82,7 @@ __device__ float inner_product_3( float *x, float *y) {
   return x[0] * y[0] + x[1] * y[1] + x[2] * y[2];
 }
 
-/* \brief calculates the weighted fitness
+/*! \brief calculates the weighted fitness
 
 Takes the objective values of the individual at idx and calculates its fitness.
 The specific weights for the individual at location x,y in the population are used for weighting.
@@ -131,7 +131,7 @@ __device__ double weighted_fitness( float *objectives, int x, int y ) {
   //return exp( (VADS_SCALE + 1) * log( (double)obj_length ) - VADS_SCALE * log( (double)inner_product_3( weight_norm,  obj_norm) ) );
 }
 
-/* \brief fitness kernel
+/*! \brief fitness kernel
 
    This kernel calculates the initial fitness of all randomly generated individuals.
 
@@ -283,7 +283,7 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
 /*! \brief main function
 
   Classic main function. It allocates all memory, generates the population, starts the kernel and collects the results.
-  All parameter changes are made via the #define statements
+  All parameter changes are made via the \#define statements
 */
 int main( int argc, char *argv[] ) {
 

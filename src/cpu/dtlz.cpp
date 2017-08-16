@@ -1,12 +1,12 @@
+/*! \file dtlz.cpp
+  This module contains all used DTLZ functions. Definition of the functions can be found in:
+  Deb, K., Thiele, L., Laumanns, M., & Zitzler, E. (2005). Scalable test problems for evolutionary multiobjective optimization (pp. 105-145). Springer London.
+*/
+
 #include "math.h"
 #include <iostream>
 
 using namespace std;
-
-/*! \file dtlz.c
-  This module contains all used DTLZ functions. Definition of the functions can be found in:
-  Deb, K., Thiele, L., Laumanns, M., & Zitzler, E. (2005). Scalable test problems for evolutionary multiobjective optimization (pp. 105-145). Springer London.
-*/
 
 /*!
   Test function. Performs the sum of all params and multiplies it with the respective objectives params.

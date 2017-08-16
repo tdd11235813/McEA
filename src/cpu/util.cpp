@@ -1,10 +1,13 @@
-/*! \file util.cu
+/*! \file util.cpp
   Utilities. Mostly to display results and generate data.
 */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
 #include <time.h>
 #include "config.h"
+
+using namespace std;
 
 /*! Returns a random float number in [0,1). */
 float randomFloat()
@@ -52,21 +55,22 @@ The objectives have to be given one individual after another.
 E. g. first all objectives of individual 1, next all of individual 2, ...
 The param OUTFILE is used as the filename and the extension '.obj' is appended.
 
-\param objectives a pointer to the objectives array
-\param folder the folder where the results are saved
+\param[in] objectives a pointer to the objectives array
+\param[in] folder the folder where the results are saved
+\param[in] run the number of the run, that is appended to the files
 */
-void write_objectives( float *objectives, char *folder, char* run ) {
+void write_objectives( float *objectives, string folder, string run) {
 
-  char filename[strlen(folder) + strlen(OUTFILE) + strlen(run) + 5];
-  strcpy( filename, folder );
-  strcat( filename, OUTFILE );
-  strcat( filename, "_" );
-  strcat( filename, run );
-  strcat( filename, ".obj" );
+  string filename = folder;
+  string extension = ".obj";
+  filename += OUTFILE;
+  filename += string("_");
+  filename += run;
+  filename += extension;
 
-  FILE *out_file = fopen( filename, "w");
+  FILE *out_file = fopen( filename.c_str(), "w");
   if(out_file == NULL)
-    printf("file: %s cannot be opened.\n", filename);
+    printf("file: %s cannot be opened.\n", filename.c_str() );
 
   for (size_t i = 0; i < POP_SIZE; i++) {
     for (size_t j = 0; j < OBJS; j++) {
@@ -80,29 +84,31 @@ void write_objectives( float *objectives, char *folder, char* run ) {
 
 /*! \brief writes the runtime and config into a file
 
-Writes a file containing the configuration (the #define values) and runtime of an optimization run.
-The runtime is written in ms.
+Writes a file containing the configuration (the \#define values) and runtime of an optimization run.
+The runtime is written in s.
 The param OUTFILE is used as the filename and the extension '.obj' is appended.
 
-\param runtime the duration of the calculations (with data copy, without file writing)
-\param folder the folder where the results are saved
+\param[in] runtime the duration of the calculations (with data copy, without file writing)
+\param[in] folder the folder where the results are saved
+\param[in] run the number of the run, that is appended to the files
 */
-void write_info( float runtime, char *folder, char* run ) {
+void write_info( float runtime, string folder, string run) {
 
-  char filename[strlen(folder) + strlen(OUTFILE) + strlen(run) + 5];
-  strcpy( filename, folder );
-  strcat( filename, OUTFILE );
-  strcat( filename, "_" );
-  strcat( filename, run );
-  strcat( filename, ".info" );
+  string filename = folder;
+  string extension = ".info";
+  filename += OUTFILE;
+  filename += string("_");
+  filename += run;
+  filename += extension;
 
-  FILE *out_file = fopen( filename, "w");
+  FILE *out_file = fopen( filename.c_str(), "w");
   if(out_file == NULL)
-    printf("file: %s cannot be opened.\n", filename);
+    printf("file: %s cannot be opened.\n", filename.c_str() );
 
-  fprintf( out_file, "name:\t\t%s\n", filename );
+  fprintf( out_file, "name:\t\t%s\n", filename.c_str() );
   fprintf( out_file, "runtime:\t%f ms\n", runtime );
   fprintf( out_file, "dtlz_problem:\t%d\n", DTLZ_NUM );
+  fprintf( out_file, "threads:\t%d\n", THREADS );
   fprintf( out_file, "generations:\t%d\n", GENERATIONS );
   fprintf( out_file, "pop_width:\t%d\n", POP_WIDTH );
   fprintf( out_file, "pop_size:\t%d\n", POP_SIZE );

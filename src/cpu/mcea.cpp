@@ -1,4 +1,4 @@
-/*! \file mcea.c
+/*! \file mcea.cpp
   Main algorithm. Starts the calculations via OpenCL.
 */
 #include <stdlib.h>
@@ -52,7 +52,7 @@ default_random_engine rand_init( long seed ) {
   return generator;
 }
 
-/* \brief calculates the weighted fitness
+/*! \brief calculates the weighted fitness
 
 Takes the objective values of the individual at idx and calculates its fitness.
 The specific weights for the individual at location x,y in the population are used for weighting.
@@ -258,7 +258,7 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
 /*! \brief main function
 
   Classic main function. It allocates all memory, generates the population, starts the kernel and collects the results.
-  All parameter changes are made via the #define statements
+  All parameter changes are made via the \#define statements
 */
 int main( int argc, char *argv[] ) {
 

@@ -1,8 +1,8 @@
-### CMakeLists.txt for CUDA
+### CMakeLists.txt for CPP
 
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/cpu)
 set(CMAKE_CXX_FLAGS "-ffast-math -O3 -fopenmp -lm")
 
 FILE(GLOB CONFIG_FILES "./config/*.cmake" )
