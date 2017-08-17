@@ -5,8 +5,11 @@ find_package(CUDA)
 
 if(CUDA_FOUND)
   # Pass options to NVCC
-  execute_process(COMMAND ./get_cuda_sm.sh
-                  OUTPUT_VARIABLE CUDA_ARCH)
+  if(NOT DEFINED CUDA_ARCH)
+    execute_process(COMMAND ../../src/gpu/get_cuda_sm.sh 
+      OUTPUT_VARIABLE CUDA_ARCH)
+  endif()
+  message(STATUS "cuda arch: sm_" ${CUDA_ARCH})
 
   set( CUDA_SEPARABLE_COMPILATION ON)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/gpu)
@@ -79,6 +82,5 @@ if(CUDA_FOUND)
 
   ENDFOREACH()
 else()
-  message(STATUS, "CUDA deselected, was not found on the system")
+  message(STATUS "CUDA deselected, toolchain not found on system")
 endif()
-
