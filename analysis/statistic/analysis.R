@@ -1,5 +1,6 @@
 library(effsize) # for Vargha and Delaney A^12
 library(stringr) # for string padding via str_pad
+library(data.table) # for fast grouped apply of functions
 
 dirs <- commandArgs(trailingOnly = TRUE)
 
@@ -40,68 +41,72 @@ metric_df$exp <- factor(apply(array(names(metric_list)), 1, build_exp_desc))
 metric_names <- colnames(metric_df)
 metric_names <- metric_names[metric_names != "exp"]
 exp_names <- levels(metric_df$exp)
+# different mcea alg
+metric_df$algor <- sub("_.*_dt[0-9]", "", metric_df$exp)
+metric_df$gen <- sub("_pw.*", "", sub(".*_g", "", metric_df$exp))
+metric_dt <- data.table(metric_df)
+
+### TODO: calculating the mean and variance
 
 ### Testing for Normality
 
-# separate the single experiments and metrics into lists
-# then calculate the shapiro-wilk normality test
-normality_list <- lapply(exp_names, function(exp) lapply(metric_names , function (metr) {
-    values <- metric_df[metric_df$exp == exp, ][[metr]]
-    if(!identical(max(values), min(values))) { 
-      shapiro.test(values)$p.value
+normtest <- function (metr) {
+    if(!identical(max(metr), min(metr))) {
+      shapiro.test(metr)$p.value
     }else{
       1.0
-    } 
-  }))
-normality_mat <- matrix(unlist(unlist(normality_list)), ncol=9, byrow=TRUE)
-colnames(normality_mat) <- metric_names
-rownames(normality_mat) <- exp_names
+  }
+}
+
+# separate the single experiments and metrics into lists
+# then calculate the shapiro-wilk normality test
+normality_list <- metric_dt[,list(EP_norm=normtest(EP), HV_norm=normtest(HV), RT_norm=normtest(RT)),by=list(algor, gen)]
 
 ### Testing for Differences
 
 # form groups for the research questions
-# different mcea alg
-metric_df$algor <- sub("_.*_dt[0-9]", "", metric_df$exp)
 
 ## ANOVA
 
+aovtest <- function(metric) { 
+  aov(as.formula(paste(metric[1], " ~ algor")), metric_df[metric_df$gen == 1000, ]) 
+}
+
 # different mcea alg
-aov_mcea_list <- lapply(metric_names, function(metric) { aov(as.formula(paste(metric, " ~ algor")), metric_df) })
+analyse_metrics <- c('EP', 'HV', 'RT')
+aov_mcea_list <- lapply(analyse_metrics, aovtest)
 pval_mcea_list <- lapply(aov_mcea_list, function(aov_res) { summary(aov_res)[[1]][["Pr(>F)"]][1] })
 pval_mcea_arr <- matrix(unlist(pval_mcea_list))
 colnames(pval_mcea_arr) <- "aov_mcea_alg"
-rownames(pval_mcea_arr) <- metric_names
+rownames(pval_mcea_arr) <- analyse_metrics
 
 ## POST HOC TEST: TukeyHSD
 
 # different mcea alg
 tuk_res_list <- lapply(aov_mcea_list, function(aov) TukeyHSD(aov)[[1]][, 4])
 tuk_res_mat <- matrix(unlist(tuk_res_list), ncol=3, byrow=TRUE)
-rownames(tuk_res_mat) <- metric_names
+rownames(tuk_res_mat) <- analyse_metrics
 colnames(tuk_res_mat) <- names(tuk_res_list[[1]])
 
 ### Testing effect size
 
 # get pairwise combinations of testsettings
 mcea_com <- combn(levels(factor(metric_df$algor)), 2)
-VD_res <- matrix(unlist(lapply(metric_names, function(metric) {
+VD_res <- matrix(unlist(lapply(analyse_metrics, function(metric) {
   apply(mcea_com, 2, function(comb) {
-    selection <- metric_df$algor %in% comb
+    selection <- metric_df$algor %in% comb & metric_df$gen == 1000
     VD.A(metric_df[[metric]][selection], metric_df$algor[selection])$estimate
   })
 })), ncol=3, byrow=TRUE)
-rownames(VD_res) <- metric_names
+rownames(VD_res) <- analyse_metrics
 colnames(VD_res) <- apply(mcea_com, 2, function(algs) paste(algs[1], algs[2]))
 
 ### write the results
 
 # Normality
-rownames(normality_mat) <- str_pad(rownames(normality_mat), 55, side="right")
-colnames(normality_mat) <- str_pad(colnames(normality_mat), 8, side="left")
-colnames(normality_mat)[1] <- paste(str_pad("Experiment:", 55, side="right"), colnames(normality_mat)[1])
 fileConn<-file("normality.txt", "w")
 writeLines("Normality results: (p < 0.05: no normality)", fileConn)
-write.table(formatC(normality_mat, digits=3, width=8), file=fileConn, append=TRUE, sep='\t', quote=FALSE)
+write.table(formatC(as.matrix(normality_list)), file=fileConn, append=TRUE, sep='\t', quote=FALSE, col.names=formatC(colnames(normality_list), width=12), row.names=FALSE)
 close(fileConn)
 
 # ANOVA
@@ -109,7 +114,7 @@ rownames(pval_mcea_arr) <- str_pad(rownames(pval_mcea_arr), 7, side="right")
 colnames(pval_mcea_arr) <- str_pad(colnames(pval_mcea_arr), 14, side="left")
 colnames(pval_mcea_arr)[1] <- paste(str_pad("Metric:", 7, side="right"), colnames(pval_mcea_arr)[1])
 fileConn<-file("anova_pval_mcea_alg.txt", "w")
-writeLines("ANOVA p-values: (p < 0.05: no equal means)", fileConn)
+writeLines("1000 Gen -- ANOVA p-values: (p < 0.05: no equal means)", fileConn)
 write.table(formatC(pval_mcea_arr, digits=3, width=8), file=fileConn, append=TRUE, sep='\t', quote=FALSE)
 close(fileConn)
 
@@ -118,7 +123,7 @@ rownames(tuk_res_mat) <- str_pad(rownames(tuk_res_mat), 7, side="right")
 colnames(tuk_res_mat) <- str_pad(colnames(tuk_res_mat), 13, side="left")
 colnames(tuk_res_mat)[1] <- paste(str_pad("Metric:", 7, side="right"), colnames(tuk_res_mat)[1])
 fileConn<-file("tukey_pval_mcea_alg.txt", "w")
-writeLines("TukeyHSD p-values: (p < 0.05: no equal means)", fileConn)
+writeLines("1000 Gen -- TukeyHSD p-values: (p < 0.05: no equal means)", fileConn)
 write.table(formatC(tuk_res_mat, digits=3, width=8), file=fileConn, append=TRUE, sep='\t', quote=FALSE)
 close(fileConn)
 
@@ -127,6 +132,6 @@ rownames(VD_res) <- str_pad(rownames(VD_res), 7, side="right")
 colnames(VD_res) <- str_pad(colnames(VD_res), 13, side="left")
 colnames(VD_res)[1] <- paste(str_pad("Metric:", 7, side="right"), colnames(VD_res)[1])
 fileConn<-file("VD_res_mcea_alg.txt", "w")
-writeLines("Vargha and Delaney’s Aˆ12: (probability, that a run A is worse than B)", fileConn)
+writeLines("1000 Gen -- Vargha and Delaney’s Aˆ12: (probability, that a run A is worse than B)", fileConn)
 write.table(formatC(VD_res, digits=3, width=8), file=fileConn, append=TRUE, sep='\t', quote=FALSE)
 close(fileConn)
