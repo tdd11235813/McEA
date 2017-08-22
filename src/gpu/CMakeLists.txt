@@ -4,15 +4,29 @@ cmake_minimum_required(VERSION 2.8)
 find_package(CUDA)
 
 if(CUDA_FOUND)
+  # caches variable, accessible by ccmake
+  set(MCEA_CUDA_ARCH "" CACHE STRING "Target Compute Capability, e.g. '52' or '' = automatic (linux).")
+
   # Pass options to NVCC
-  if(NOT DEFINED CUDA_ARCH)
-    execute_process(COMMAND ../../src/gpu/get_cuda_sm.sh 
-      OUTPUT_VARIABLE CUDA_ARCH)
+  if(UNIX AND NOT MCEA_CUDA_ARCH)
+    message(STATUS "Running automatic device architecture detection ...")
+    make_directory(${CMAKE_BINARY_DIR}/tmp)
+    execute_process(COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/get_cuda_sm.sh 0
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tmp
+      ERROR_FILE ${CMAKE_BINARY_DIR}/tmp/cmake.error.log
+      OUTPUT_VARIABLE MCEA_CUDA_ARCH)
   endif()
-  message(STATUS "cuda arch: sm_" ${CUDA_ARCH})
+
+  if(MCEA_CUDA_ARCH)
+    message(STATUS "cuda arch: sm_" ${MCEA_CUDA_ARCH})
+  else()
+    message(WARNING "Could not determine CUDA architecture, please manually define MCEA_CUDA_ARCH (via ccmake or -D).")
+    return()
+  endif()
 
   set( CUDA_SEPARABLE_COMPILATION ON)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/gpu)
+  set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 
   FILE(GLOB CONFIG_FILES "./config/*.cmake" )
   FOREACH(CFILE ${CONFIG_FILES})
@@ -32,7 +46,7 @@ if(CUDA_FOUND)
 
     set(
         CUDA_NVCC_FLAGS
-        -arch=sm_${CUDA_ARCH} 
+        -arch=sm_${MCEA_CUDA_ARCH}
         --relocatable-device-code true
         -DGENERATIONS=${GENERATIONS}
         -DPOP_WIDTH=${POP_WIDTH}
@@ -72,13 +86,17 @@ if(CUDA_FOUND)
     # Specify target & libraries to link it with
     target_link_libraries(
       mcea_sync${CONFIG}
-        ${CUDA_curand_LIBRARY}
-        )
+      ${CUDA_LIBRARIES}
+      ${CUDA_curand_LIBRARY}
+      rt
+      )
 
-      target_link_libraries(
-        mcea_async${CONFIG}
-        ${CUDA_curand_LIBRARY}
-        )
+    target_link_libraries(
+      mcea_async${CONFIG}
+      ${CUDA_LIBRARIES}
+      ${CUDA_curand_LIBRARY}
+      rt
+      )
 
   ENDFOREACH()
 else()
