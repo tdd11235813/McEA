@@ -46,7 +46,9 @@ metric_df$algor <- sub("_.*_dt[0-9]", "", metric_df$exp)
 metric_df$gen <- sub("_pw.*", "", sub(".*_g", "", metric_df$exp))
 metric_dt <- data.table(metric_df)
 
-### TODO: calculating the mean and variance
+### calculating the mean and variance
+mean_list <- metric_dt[,list(EP_mean=mean(EP), HV_mean=mean(HV), RT_mean=mean(RT)),by=list(algor, gen)]
+var_list <- metric_dt[,list(EP_var=var(EP), HV_var=var(HV), RT_var=var(RT)),by=list(algor, gen)]
 
 ### Testing for Normality
 
@@ -102,6 +104,16 @@ rownames(VD_res) <- analyse_metrics
 colnames(VD_res) <- apply(mcea_com, 2, function(algs) paste(algs[1], algs[2]))
 
 ### write the results
+
+# Mean and Variance
+fileConn<-file("mean.txt", "w")
+writeLines("Mean results:", fileConn)
+write.table(formatC(as.matrix(mean_list)), file=fileConn, append=TRUE, sep='\t', quote=FALSE, col.names=formatC(colnames(mean_list), width=12), row.names=FALSE)
+close(fileConn)
+fileConn<-file("variance.txt", "w")
+writeLines("Variance results:", fileConn)
+write.table(formatC(as.matrix(var_list)), file=fileConn, append=TRUE, sep='\t', quote=FALSE, col.names=formatC(colnames(var_list), width=12), row.names=FALSE)
+close(fileConn)
 
 # Normality
 fileConn<-file("normality.txt", "w")
