@@ -68,7 +68,7 @@ if(CUDA_FOUND)
         config.h
         error.h
         dtlz.cuh
-        util.h
+        util.cuh
         )
 
     cuda_add_executable(
@@ -79,7 +79,7 @@ if(CUDA_FOUND)
         config.h
         error.h
         dtlz.cuh
-        util.h
+        util.cuh
         )
 
     # For linking ...

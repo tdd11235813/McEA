@@ -9,7 +9,7 @@
 
 // own header files
 #include "error.h"
-#include "util.h"
+#include "util.cuh"
 #include "dtlz.cuh"
 #include "config.h"
 
@@ -56,16 +56,16 @@ __global__ void rand_init( curandStatePhilox4_32_10_t  *state, unsigned long see
 
 /*! \brief generates a random uniform int
 
-  Draws from a uniform distribution in [0, 1] and converts it to an integer in the range [0, values-1].
+  Takes a value from a uniform distribution in [0, 1] and converts it to an integer in the range [0, values-1].
 
-  \param[in] state the PRNG state to use
+  \param[in] rand_num the random number to transform
   \param[in] values the number of possible values for the uniform distribution
 
   \return an integer in the specified range
 */
-__device__ int rnd_uniform_int( curandStatePhilox4_32_10_t  *state, int values ) {
+__device__ int trans_uniform_int( float rand_num, int values ) {
 
-    return (int)truncf( curand_uniform( state ) * ( values - 0.000001) );
+    return (int)truncf( rand_num * ( values - 0.000001) );
 }
 
 /*! \brief calculates the dot product for 2 vectors
@@ -151,6 +151,8 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
   int block_idx = (blockDim.x * threadIdx.y + threadIdx.x);
   int idx = x + y * (POP_WIDTH + 1);
   curandStatePhilox4_32_10_t rng_local;
+  float4_union randn_neigh_1, randn_neigh_2, randn_xover_point;
+  int4_union randn_mut_count;
 
   if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {
     rng_local = *(rng_state + idx);
@@ -162,10 +164,21 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
   for (size_t g = 0; g < GENERATIONS; g++) {
 
     if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {
+
+      // ### generate random numbers ###
+      // pre-generate for 4 generations
+      if(g % 4 == 0) {
+        randn_neigh_1.vec = curand_uniform4( &rng_local );
+        randn_neigh_2.vec = curand_uniform4( &rng_local );
+        randn_xover_point.vec = curand_uniform4( &rng_local );
+        randn_mut_count.vec = curand_poisson4( &rng_local, LAMBDA );
+
+      }
+
       // ### pairing ###
       // random neighbors
-      int neighbor_1 = get_neighbor( x, y, rnd_uniform_int( &rng_local, N_WIDTH * N_WIDTH ) );
-      int neighbor_2 = get_neighbor( x, y, rnd_uniform_int( &rng_local, N_WIDTH * N_WIDTH ) );
+      int neighbor_1 = get_neighbor( x, y, trans_uniform_int( randn_neigh_1.arr[g%4], N_WIDTH * N_WIDTH ) );
+      int neighbor_2 = get_neighbor( x, y, trans_uniform_int( randn_neigh_2.arr[g%4], N_WIDTH * N_WIDTH ) );
 
       // compare neighbors
       double fit_1 =  weighted_fitness( objectives + neighbor_1 * OBJS, x, y );
@@ -186,7 +199,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
       }
       // ### crossover ###
       // == one-point crossover
-      int x_over_point = rnd_uniform_int( &rng_local, PARAMS );
+      int x_over_point = trans_uniform_int( randn_xover_point.arr[g%4], PARAMS );
       if( idx == 0 && VERBOSE )
         printf( "xover: %d\n", x_over_point );
 
@@ -201,12 +214,12 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
       }
       // ### mutation ###
       // == uniform mutation
-      int num_mutations = curand_poisson( &rng_local, LAMBDA );
+      int num_mutations = randn_mut_count.arr[g%4];
       if( idx == 0 && VERBOSE )
         printf( "mut: %d\n", num_mutations );
 
       for (size_t i = 0; i < num_mutations; i++) {
-        int mut_location = rnd_uniform_int( &rng_local, PARAMS );
+        int mut_location = trans_uniform_int( curand_uniform(&rng_local), PARAMS );
         offspring[block_idx * PARAMS + mut_location] = curand_uniform( &rng_local );
       }
 

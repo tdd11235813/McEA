@@ -9,7 +9,7 @@
 
 // own header files
 #include "error.h"
-#include "util.h"
+#include "util.cuh"
 #include "dtlz.cuh"
 #include "config.h"
 
