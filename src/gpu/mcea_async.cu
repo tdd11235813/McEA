@@ -6,12 +6,15 @@
 #include <curand_kernel.h>
 #include <math.h>
 #include <time.h>
+#include <string>
 
 // own header files
 #include "error.h"
 #include "util.h"
 #include "dtlz.cuh"
 #include "config.h"
+
+using namespace std;
 
   //! pointers to the dtlz functions
   __device__ void (*dtlz_funcs[])(float*,float*,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
@@ -269,20 +272,14 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
 int main(int argc, char *argv[]) {
 
   // get the output folder the run number and type
-  char *folder;
-  char *run;
+  string folder = "";
+  string run = "0";
   if(argc > 1) {
     folder = argv[1];
     run = argv[2];
-  } else {
-    char empty[1] = "";
-    char zero[2] = "0";
-    folder = empty;
-    run = zero;
   }
-  char runtype[ strlen(run) + 6];
-  strcpy( runtype, "async_" );
-  strcat( runtype, run );
+
+  run = string("async_") + run;
 
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
@@ -333,8 +330,8 @@ int main(int argc, char *argv[]) {
   ERR( cudaMemcpy( objectives_h, objectives_d, POP_SIZE * OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
 
   // write the results to file
-  write_objectives( objectives_h, folder, runtype );
-  write_info( elapsedTime, folder, runtype);
+  write_objectives( objectives_h, folder, run );
+  write_info( elapsedTime, folder, run );
 
   // free resources
   free( population_h );

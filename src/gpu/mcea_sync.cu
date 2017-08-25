@@ -287,21 +287,15 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
 */
 int main( int argc, char *argv[] ) {
 
-  // get the output folder
-  char *folder;
-  char *run;
+  // get the output folder the run number and type
+  string folder = "";
+  string run = "0";
   if(argc > 1) {
     folder = argv[1];
     run = argv[2];
-  } else {
-    char empty[1] = "";
-    char zero[2] = "0";
-    folder = empty;
-    run = zero;
   }
-  char runtype[ strlen(run) + 5];
-  strcpy( runtype, "sync_" );
-  strcat( runtype, run );
+
+  run = string("async_") + run;
 
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
@@ -368,8 +362,8 @@ int main( int argc, char *argv[] ) {
   ERR( cudaMemcpy( objectives_h, objectives1_d, POP_SIZE * OBJS * sizeof(float), cudaMemcpyDeviceToHost ) );
 
   // write the results to file
-  write_objectives( objectives_h, folder, runtype );
-  write_info( elapsedTime, folder, runtype );
+  write_objectives( objectives_h, folder, run);
+  write_info( elapsedTime, folder, run);
 
   // free resources
   free( population_h );

@@ -263,15 +263,11 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
 int main( int argc, char *argv[] ) {
 
   // get the output folder
-  string folder;
-  string run;
+  string folder = string("");
+  string run = string("0");
   if(argc > 1) {
     folder = string(argv[1]);
     run = string(argv[2]);  
-  }
-  else {
-    folder = string("");
-    run = string("0");
   }
 
   // allocate memory

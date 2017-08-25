@@ -2,9 +2,15 @@
   Utilities. Mostly to display results and generate data.
 */
 #include <stdlib.h>
-#include <stdio.h>
 #include <time.h>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <iomanip>
 #include "config.h"
+
+using namespace std;
 
 /*! Returns a random float number in [0,1). */
 float randomFloat()
@@ -54,29 +60,28 @@ The param OUTFILE is used as the filename and the extension '.obj' is appended.
 
 \param[in] objectives a pointer to the objectives array
 \param[in] folder the folder where the results are saved
-\param[in] run the number of the run, that is appended to the files
+\param[in] run the number and type of the run, that is appended to the files
 */
-void write_objectives( float *objectives, char *folder, char* run ) {
+void write_objectives( float *objectives, string folder, string run ) {
 
-  char filename[strlen(folder) + strlen(OUTFILE) + strlen(run) + 5];
-  strcpy( filename, folder );
-  strcat( filename, OUTFILE );
-  strcat( filename, "_" );
-  strcat( filename, run );
-  strcat( filename, ".obj" );
+  ostringstream filename;
+  filename << folder << OUTFILE << "_" << run << ".obj";
 
-  FILE *out_file = fopen( filename, "w");
-  if(out_file == NULL)
-    printf("file: %s cannot be opened.\n", filename);
+  ofstream out_file;
+  out_file.open(filename.str().c_str());
+  if(!out_file.is_open()) {
+    cout << "file: " << filename.str() << " cannot be opened.\n";
+    return;
+  }
 
   for (size_t i = 0; i < POP_SIZE; i++) {
     for (size_t j = 0; j < OBJS; j++) {
-      fprintf( out_file, "%f\t", objectives[i*OBJS + j] );
+      out_file << objectives[i*OBJS + j] << "\t";
     }
-    fprintf( out_file, "\n" );
+    out_file << "\n";
   }
 
-  fclose( out_file );
+  out_file.close();
 }
 
 /*! \brief writes the runtime and config into a file
@@ -87,31 +92,30 @@ The param OUTFILE is used as the filename and the extension '.obj' is appended.
 
 \param[in] runtime the duration of the calculations (with data copy, without file writing)
 \param[in] folder the folder where the results are saved
-\param[in] run the number of the run, that is appended to the files
+\param[in] run the number and type of the run, that is appended to the files
 */
-void write_info( float runtime, char *folder, char* run ) {
+void write_info( float runtime, string folder, string run ) {
 
-  char filename[strlen(folder) + strlen(OUTFILE) + strlen(run) + 5];
-  strcpy( filename, folder );
-  strcat( filename, OUTFILE );
-  strcat( filename, "_" );
-  strcat( filename, run );
-  strcat( filename, ".info" );
+  ostringstream filename;
+  filename << folder << OUTFILE << "_" << run << ".info";
 
-  FILE *out_file = fopen( filename, "w");
-  if(out_file == NULL)
-    printf("file: %s cannot be opened.\n", filename);
+  ofstream out_file;
+  out_file.open (filename.str().c_str());
+  if(!out_file.is_open()) {
+    cout << "file: " << filename.str() << " cannot be opened.\n";
+    return;
+    }
 
-  fprintf( out_file, "name:\t\t%s\n", filename );
-  fprintf( out_file, "runtime:\t%f ms\n", runtime );
-  fprintf( out_file, "dtlz_problem:\t%d\n", DTLZ_NUM );
-  fprintf( out_file, "generations:\t%d\n", GENERATIONS );
-  fprintf( out_file, "pop_width:\t%d\n", POP_WIDTH );
-  fprintf( out_file, "pop_size:\t%d\n", POP_SIZE );
-  fprintf( out_file, "param_count\t%d\n", PARAMS );
-  fprintf( out_file, "objectives:\t%d\n", OBJS );
-  fprintf( out_file, "neighborhood:\t%d\n", N_RAD );
-  fprintf( out_file, "mutation_prob:\t%f\n", P_MUT );
+  out_file << "name:\t\t" << filename.str() << "\n";
+  out_file << "runtime:\t" << fixed << setprecision(2) << runtime << " ms\n";
+  out_file << "dtlz_problem:\t" << DTLZ_NUM << "\n";
+  out_file << "generations:\t" << GENERATIONS << "\n";
+  out_file << "pop_width:\t" << POP_WIDTH << "\n";
+  out_file << "pop_size:\t" << POP_SIZE << "\n";
+  out_file << "param_count\t" << PARAMS << "\n";
+  out_file << "objectives:\t" << OBJS << "\n";
+  out_file << "neighborhood:\t" << N_RAD << "\n";
+  out_file << "mutation_prob:\t" << P_MUT << "\n";
 
-  fclose( out_file );
+  out_file.close();
 }
