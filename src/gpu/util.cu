@@ -76,7 +76,7 @@ void write_objectives( float *objectives, string folder, string run ) {
 
   for (size_t i = 0; i < POP_SIZE; i++) {
     for (size_t j = 0; j < OBJS; j++) {
-      out_file << objectives[i*OBJS + j] << "\t";
+      out_file << objectives[i + j * POP_SIZE] << "\t";
     }
     out_file << "\n";
   }

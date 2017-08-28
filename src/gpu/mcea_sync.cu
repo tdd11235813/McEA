@@ -14,7 +14,7 @@
 #include "config.h"
 
   //! pointers to the dtlz functions
-  __device__ void (*dtlz_funcs[])(float*,float*,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
+  __device__ void (*dtlz_funcs[])(float*,float*,int,int, int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
 
 /*! \brief neighbor calculation
 
@@ -142,10 +142,10 @@ __global__ void calc_fitness( float *population, float *objectives ) {
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
   int idx = x + y * (POP_WIDTH + 1);
-  void (*dtlz_ptr)(float*, float*, int, int) = dtlz_funcs[DTLZ];
+  void (*dtlz_ptr)(float*, float*, int, int, int) = dtlz_funcs[DTLZ];
 
   if( x < POP_WIDTH + 1 && y < POP_WIDTH )
-    (*dtlz_ptr)( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
+    (*dtlz_ptr)( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS , POP_SIZE);
 }
 
 /*! \brief McEA kernel
@@ -164,7 +164,7 @@ __global__ void calc_fitness( float *population, float *objectives ) {
 __global__ void mcea( float *population_in, float *objectives_in, float *population_out, float *objectives_out, curandStatePhilox4_32_10_t *rng_state ) {
   __shared__ float offspring[PARAMS * BLOCKDIM * BLOCKDIM];
   __shared__ float offspring_fit[OBJS * BLOCKDIM * BLOCKDIM];
-  void (*dtlz_ptr)(float*, float*, int, int) = dtlz_funcs[DTLZ];
+  void (*dtlz_ptr)(float*, float*, int, int, int) = dtlz_funcs[DTLZ];
 
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -234,7 +234,7 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
     // == select if better
 
     // evaluate the offspring
-    (*dtlz_ptr)( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS );
+    (*dtlz_ptr)( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS, BLOCKSIZE);
 
     if( idx == 0 && VERBOSE ) {
       printf( "offspring fit: " );

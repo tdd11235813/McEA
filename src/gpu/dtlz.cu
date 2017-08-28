@@ -1,5 +1,6 @@
 #include "math_constants.h"
 #include "config.h"
+#include "error.h"
 
 /*! \file dtlz.cu
   This module contains all used DTLZ functions. Definition of the functions can be found in:
@@ -12,12 +13,13 @@
   \param objectives pointer to objective array
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
+  \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void testObjSum( float *params, float *objectives, int param_size, int obj_size ) {
+__device__ void testObjSum( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
   float param_sum = 0.0;
   for (size_t i = 0; i < param_size; i++) {
-    param_sum += params[i];
+    param_sum += params[i * step_size];
   }
 
   for (size_t i = 0; i < obj_size; i++) {
@@ -35,8 +37,9 @@ __device__ void testObjSum( float *params, float *objectives, int param_size, in
   \param objectives pointer to objective array
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
+  \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz1( float *params, float *objectives, int param_size, int obj_size ) {
+__device__ void dtlz1( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
 		double g = 0.0;
 		for (int i = obj_size - 1; i < param_size; i++) {
@@ -75,8 +78,9 @@ __device__ void dtlz1( float *params, float *objectives, int param_size, int obj
   \param objectives pointer to objective array
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
+  \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz2( float *params, float *objectives, int param_size, int obj_size ) {
+__device__ void dtlz2( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
   double g = 0.0;
   for (int i = obj_size - 1; i < param_size; i++)
@@ -107,8 +111,9 @@ __device__ void dtlz2( float *params, float *objectives, int param_size, int obj
   \param objectives pointer to objective array
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
+  \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz3( float *params, float *objectives, int param_size, int obj_size ) {
+__device__ void dtlz3( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
 	double g = 0.0;
 	for (int i = obj_size - 1; i < param_size; i++) {
@@ -142,8 +147,9 @@ __device__ void dtlz3( float *params, float *objectives, int param_size, int obj
   \param objectives pointer to objective array
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
+  \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz4( float *params, float *objectives, int param_size, int obj_size ) {
+__device__ void dtlz4( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
   double g = 0.0;
   double alpha = 100.0;
@@ -175,8 +181,9 @@ __device__ void dtlz4( float *params, float *objectives, int param_size, int obj
   \param objectives pointer to objective array
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
+  \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz5( float *params, float *objectives, int param_size, int obj_size ) {
+__device__ void dtlz5( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
   float g = 0.0;
   float t = 0.0;
@@ -216,8 +223,9 @@ __device__ void dtlz5( float *params, float *objectives, int param_size, int obj
   \param objectives pointer to objective array
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
+  \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz6( float *params, float *objectives, int param_size, int obj_size ) {
+__device__ void dtlz6( float *params, float *objectives, int param_size, int obj_size, int step_size ) {
 
   float g = 0.0;
   float t = 0.0;
@@ -256,24 +264,25 @@ __device__ void dtlz6( float *params, float *objectives, int param_size, int obj
   \param objectives pointer to objective array
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
+  \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz7( float *params, float *objectives, int param_size, int obj_size ) {
+__device__ void dtlz7( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
         float g = 0.0;
         float h = 0.0;
 
         for (int i = obj_size - 1; i < param_size; i++) {
-            g += params[i];
+            g += params[i * step_size];
         }
         g= 2 + ( 9 * g ) / (param_size - obj_size + 1);
 
 
         for (int i = 0; i < obj_size - 1 ; i++)
-            objectives[i] = params[i];
+            objectives[i * step_size] = params[i * step_size];
 
         for (int i = 0 ; i < obj_size - 1; i++)
-            h += params[i] / g * (1 + sinf(3 * CUDART_PI_F * params[i]));
+            h += params[i * step_size] / g * (1 + sinf(3 * CUDART_PI_F * params[i * step_size]));
         h = obj_size - h;
 
-        objectives[obj_size-1] =  g * h;
+        objectives[(obj_size-1) * step_size] =  g * h;
 }
