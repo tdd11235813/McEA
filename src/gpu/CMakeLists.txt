@@ -50,6 +50,7 @@ if(CUDA_FOUND)
         CUDA_NVCC_FLAGS
         -arch=sm_${MCEA_CUDA_ARCH}
         --relocatable-device-code true
+        --use_fast_math
         -DGENERATIONS=${GENERATIONS}
         -DPOP_WIDTH=${POP_WIDTH}
         -DPARAMS=${PARAMS}
