@@ -1,21 +1,48 @@
-// ### these parameters are defined by the makefile
+// ### default values (overwritten by the files in /config)
+
+#ifndef GENERATIONS 
 // number of generations that the alg. performs
-// #define GENERATIONS 1000
+#define GENERATIONS 10
+#endif
+
+#ifndef POP_WIDTH 
 // the y-size of the population grid (in individuals)
-// #define POP_WIDTH 400
+// can be adjusted at will, scales the memory usage quadratical
+#define POP_WIDTH 400
+#endif
+
+#ifndef PARAMS 
 // the number of parameters for the optimization problen (DTLZ-n)
-// can be adjusted at will, scales the memory usage linearly
-// #define PARAMS 20
+#define PARAMS 20
+#endif
+
+#ifndef N_RAD 
 // the radius of the neighborhood around an individual
 // the neighborhood is square at all times
-// #define N_RAD 2
-// the number of threads to use in OpenMP
-// #define THREADS 8
-// the scaling factor for the VADS weighting algorithm
-// #define VADS_SCALE 100
-// the base of the filename where the results shall be written
-// #define OUTFILE "test"
+#define N_RAD 2
+#endif
 
+#ifndef THREADS 
+// the number of threads to use in OpenMP
+#define THREADS 8
+#endif
+
+#ifndef VADS_SCALE 
+// the scaling factor for the VADS weighting algorithm
+#define VADS_SCALE 100
+#endif
+
+#ifndef OUTFILE 
+// the base of the filename where the results shall be written
+#define OUTFILE "out"
+#endif
+
+#ifndef DTLZ_NUM 
+// the number of the DTLZ problem to solve
+#define DTLZ_NUM 7
+#endif
+
+// ### static values
 
 // the total number of individuals in the population
 // the x-size is bigger than the y-size by 1 because of the topology
@@ -34,5 +61,7 @@
 #define VERBOSE false
 // the size of one block in a dimension
 #define BLOCKDIM 16
+// the size of one whole block
+#define BLOCKSIZE (BLOCKDIM * BLOCKDIM)
 // calculate index from DTLZ number
 #define DTLZ (DTLZ_NUM - 1)
