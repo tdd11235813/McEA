@@ -192,7 +192,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
           printf( "%.2f, ", population[idx + i * POP_SIZE] );
         printf( "\n" );
         for (size_t i = 0; i < OBJS; i++)
-          printf( "%.2f, ", objectives[i + idx * OBJS] );
+          printf( "%.2f, ", objectives[i + idx * POP_SIZE] );
         printf( "\n" );
       }
       // ### crossover ###

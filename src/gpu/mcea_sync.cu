@@ -14,7 +14,7 @@
 #include "config.h"
 
   //! pointers to the dtlz functions
-  __device__ void (*dtlz_funcs[])(float*,float*,int,int, int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
+  __device__ void (*dtlz_funcs[])(float*,float*,int,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
 
 /*! \brief neighbor calculation
 
@@ -89,26 +89,28 @@ The specific weights for the individual at location x,y in the population are us
 ! This only works for 3 objectives for now !
 TODO: for real world problems use the weighted tchebychev method (use utopia vector)
 
-\param[in] objectives pointer to the objective values of the individual
+\param[in] objectives pointer to the first objective value of the individual
 \param[in] x the x location of the weighting basis (does not have to be the same ind the objectives are from)
 \param[in] y the y location of the weighting basis (does not have to be the same ind the objectives are from)
+\param[in] offset the distance between two objective values in memory
 
 \return the weighted fitness value
 */
-__device__ double weighted_fitness( float *objectives, int x, int y ) {
+__device__ double weighted_fitness( float *objectives, int x, int y, int offset) {
+
   // this decides if the individual is on the mirrored side of the population
   // and gives the correction factor for the weights
   int mirror = (x + y < POP_WIDTH)? false : true;
 
   // calculate weights
-  float offset =  (mirror) ? 0.25 : 0.0;
-  int _x  =  (mirror) ? POP_WIDTH - y - 1 : x;
-  int _y  =  (mirror) ? POP_WIDTH - x : y;
+  float displacement = (mirror) ? 0.25              : 0.0;
+  int _x             = (mirror) ? POP_WIDTH - y - 1 : x;
+  int _y             = (mirror) ? POP_WIDTH - x     : y;
 
   float weights[OBJS];
-  weights[0] = (1 - (_x+offset)/(POP_WIDTH-0.5) - (_y+offset)/(POP_WIDTH-0.5));
-  weights[1] = (_x+offset)/(POP_WIDTH-0.5);
-  weights[2] = (_y+offset)/(POP_WIDTH-0.5);
+  weights[0] = (1 - (_x+displacement)/(POP_WIDTH-0.5) - (_y+displacement)/(POP_WIDTH-0.5));
+  weights[1] = (_x+displacement)/(POP_WIDTH-0.5);
+  weights[2] = (_y+displacement)/(POP_WIDTH-0.5);
 
   // normalize weight vector
   float weight_length = sqrt(
@@ -119,10 +121,14 @@ __device__ double weighted_fitness( float *objectives, int x, int y ) {
 
   // normalize fitness
   float obj_length = sqrt(
-      objectives[0] * objectives[0] +
-      objectives[1] * objectives[1] +
-      objectives[2] * objectives[2] );
-  float obj_norm[] = { objectives[0] / obj_length, objectives[1] / obj_length, objectives[2] / obj_length };
+      objectives[0]        * objectives[0] +
+      objectives[offset]   * objectives[offset] +
+      objectives[offset*2] * objectives[offset*2] );
+
+  float obj_norm[] = { 
+    objectives[0]        / obj_length,
+    objectives[offset]   / obj_length,
+    objectives[offset*2] / obj_length };
 
   // calculate the fitness
   return obj_length / pow( (double)inner_product_3( weight_norm, obj_norm), VADS_SCALE );
@@ -145,7 +151,7 @@ __global__ void calc_fitness( float *population, float *objectives ) {
   void (*dtlz_ptr)(float*, float*, int, int, int) = dtlz_funcs[DTLZ];
 
   if( x < POP_WIDTH + 1 && y < POP_WIDTH )
-    (*dtlz_ptr)( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS , POP_SIZE);
+    (*dtlz_ptr)( population+idx, objectives+idx, PARAMS, OBJS, POP_SIZE );
 }
 
 /*! \brief McEA kernel
@@ -162,15 +168,17 @@ __global__ void calc_fitness( float *population, float *objectives ) {
   \param[in] rng_state the initialized state of the PRNG to use
 */
 __global__ void mcea( float *population_in, float *objectives_in, float *population_out, float *objectives_out, curandStatePhilox4_32_10_t *rng_state ) {
-  __shared__ float offspring[PARAMS * BLOCKDIM * BLOCKDIM];
-  __shared__ float offspring_fit[OBJS * BLOCKDIM * BLOCKDIM];
+  __shared__ float offspring[PARAMS * BLOCKSIZE];
+  __shared__ float offspring_fit[OBJS * BLOCKSIZE];
   void (*dtlz_ptr)(float*, float*, int, int, int) = dtlz_funcs[DTLZ];
+  curandStatePhilox4_32_10_t rng_local;
 
+  // global indices
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
-  int block_idx = (blockDim.x * threadIdx.y + threadIdx.x);
   int idx = x + y * (POP_WIDTH + 1);
-  curandStatePhilox4_32_10_t rng_local;
+  // blockwise indices
+  int block_idx = (blockDim.x * threadIdx.y + threadIdx.x);
 
   if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {
     rng_local = *(rng_state + idx);
@@ -181,8 +189,8 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
     int neighbor_2 = get_neighbor( x, y, rnd_uniform_int( &rng_local, N_WIDTH * N_WIDTH ) );
 
     // compare neighbors
-    double fit_1 =  weighted_fitness( objectives_in + neighbor_1 * OBJS, x, y );
-    double fit_2 =  weighted_fitness( objectives_in + neighbor_2 * OBJS, x, y );
+    double fit_1 =  weighted_fitness( objectives_in + neighbor_1, x, y, POP_SIZE);
+    double fit_2 =  weighted_fitness( objectives_in + neighbor_2, x, y, POP_SIZE);
     int neighbor_sel = (fit_1 < fit_2)? neighbor_1 : neighbor_2;
 
     if( idx == 0 && VERBOSE )
@@ -191,10 +199,10 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
     if( idx == 0 && VERBOSE ) {
       printf( "original: " );
       for (size_t i = 0; i < PARAMS; i++)
-        printf( "%.2f, ", population_in[i + idx * PARAMS] );
+        printf( "%.2f, ", population_in[idx + i * POP_SIZE] );
       printf( "\n" );
       for (size_t i = 0; i < OBJS; i++)
-        printf( "%.2f, ", objectives_in[i + idx * OBJS] );
+        printf( "%.2f, ", objectives_in[idx + i * POP_SIZE] );
       printf( "\n" );
     }
     // ### crossover ###
@@ -204,12 +212,12 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
       printf( "xover: %d\n", x_over_point );
 
     for (size_t i = 0; i < PARAMS; i++)
-      offspring[block_idx * PARAMS + i] = (i<x_over_point) ? population_in[i + idx * PARAMS] : population_in[i + neighbor_sel * PARAMS];
+      offspring[block_idx + BLOCKSIZE * i] = (i<x_over_point) ? population_in[idx + i * POP_SIZE] : population_in[neighbor_sel + i * POP_SIZE];
 
     if( idx == 0 && VERBOSE ) {
       printf( "crossover: " );
       for (size_t i = 0; i < PARAMS; i++)
-        printf( "%.2f, ", offspring[block_idx * PARAMS + i] );
+        printf( "%.2f, ", offspring[block_idx + BLOCKSIZE * i] );
       printf( "\n" );
     }
     // ### mutation ###
@@ -220,13 +228,13 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
 
     for (size_t i = 0; i < num_mutations; i++) {
       int mut_location = rnd_uniform_int( &rng_local, PARAMS );
-      offspring[block_idx * PARAMS + mut_location] = curand_uniform( &rng_local );
+      offspring[block_idx + BLOCKSIZE * mut_location] = curand_uniform( &rng_local );
     }
 
     if( idx == 0 && VERBOSE ) {
       printf( "mutated: " );
       for (size_t i = 0; i < PARAMS; i++)
-        printf( "%.2f, ", offspring[block_idx * PARAMS + i] );
+        printf( "%.2f, ", offspring[block_idx + BLOCKSIZE * i] );
       printf( "\n" );
     }
 
@@ -234,43 +242,43 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
     // == select if better
 
     // evaluate the offspring
-    (*dtlz_ptr)( offspring + block_idx * PARAMS, offspring_fit + block_idx * OBJS, PARAMS, OBJS, BLOCKSIZE);
+    (*dtlz_ptr)( offspring + block_idx, offspring_fit + block_idx, PARAMS, OBJS, BLOCKSIZE );
 
     if( idx == 0 && VERBOSE ) {
       printf( "offspring fit: " );
       for (size_t i = 0; i < OBJS; i++)
-        printf( "%.2f, ", offspring_fit[block_idx * OBJS + i] );
+        printf( "%.2f, ", offspring_fit[block_idx + BLOCKSIZE * i] );
       printf( "\n" );
     }
 
     // compare and copy
-    fit_1 =  weighted_fitness( objectives_in + idx * OBJS, x, y );
-    fit_2 =  weighted_fitness( offspring_fit + block_idx * OBJS, x, y );
+    fit_1 =  weighted_fitness( objectives_in + idx, x, y, POP_SIZE );
+    fit_2 =  weighted_fitness( offspring_fit + block_idx, x, y, BLOCKSIZE );
 
     if( idx == 0 && VERBOSE )
       printf( "offspring weight: %.5lf\n", fit_2 );
 
     if(fit_2 < fit_1) {
       for (size_t i = 0; i < PARAMS; i++)
-        population_out[i + idx * PARAMS] = offspring[block_idx * PARAMS + i];
+        population_out[idx + i * POP_SIZE] = offspring[block_idx + BLOCKSIZE * i];
       for (size_t i = 0; i < OBJS; i++)
-        objectives_out[i + idx * OBJS] = offspring_fit[block_idx * OBJS + i];
+        objectives_out[idx + i * POP_SIZE] = offspring_fit[block_idx + BLOCKSIZE * i];
     }
     else {
       for (size_t i = 0; i < PARAMS; i++)
-        population_out[i + idx * PARAMS] = population_in[i + idx * PARAMS];
+        population_out[idx + i * POP_SIZE] = population_in[idx + i * POP_SIZE];
       for (size_t i = 0; i < OBJS; i++)
-        objectives_out[i + idx * OBJS] = objectives_in[i + idx * OBJS];
+        objectives_out[idx + i * POP_SIZE] = objectives_in[idx + i * POP_SIZE];
     }
 
 
     if( idx == 0 && VERBOSE ) {
       printf( "new ind: " );
       for (size_t i = 0; i < PARAMS; i++)
-        printf( "%.2f, ", population_out[i + idx * PARAMS] );
+        printf( "%.2f, ", population_out[idx + i * POP_SIZE] );
       printf( "\n" );
       for (size_t i = 0; i < OBJS; i++)
-        printf( "%.2f, ", objectives_out[i + idx * OBJS] );
+        printf( "%.2f, ", objectives_out[idx + i * POP_SIZE] );
       printf( "\n" );
     }
 
@@ -295,7 +303,7 @@ int main( int argc, char *argv[] ) {
     run = argv[2];
   }
 
-  run = string("async_") + run;
+  run = string("sync_") + run;
 
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
