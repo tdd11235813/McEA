@@ -23,7 +23,7 @@ __device__ void testObjSum( float *params, float *objectives, int param_size, in
   }
 
   for (size_t i = 0; i < obj_size; i++) {
-    objectives[i] = param_sum * i;
+    objectives[i * step_size] = param_sum * i;
   }
 
   return;
@@ -43,15 +43,15 @@ __device__ void dtlz1( float *params, float *objectives, int param_size, int obj
 
 		double g = 0.0;
 		for (int i = obj_size - 1; i < param_size; i++) {
-			g += powf(params[i] - 0.5, 2.0)
-					- cosf(20.0 * CUDART_PI_F * (params[i] - 0.5));
+			g += powf(params[i * step_size] - 0.5, 2.0)
+					- cosf(20.0 * CUDART_PI_F * (params[i * step_size] - 0.5));
 		}
 		g = 0.5 * (1.0 + 100.0 * (param_size - obj_size + 1 + g));
 
     // first iteration is different
     double f = g;
 		for (int j = 0; j < obj_size - 1; j++) {
-			f *= params[j];
+			f *= params[j * step_size];
 		}
     objectives[0] = f;
 
@@ -60,11 +60,11 @@ __device__ void dtlz1( float *params, float *objectives, int param_size, int obj
 			f = g;
 
 			for (int j = 0; j < obj_size - i - 1; j++) {
-				f *= params[j];
+				f *= params[j * step_size];
 			}
-			f *= 1 - params[obj_size - i - 1];
+			f *= 1 - params[(obj_size - i - 1) * step_size];
 
-      objectives[i] = f;
+      objectives[i * step_size] = f;
 		}
 
     return;
@@ -84,22 +84,22 @@ __device__ void dtlz2( float *params, float *objectives, int param_size, int obj
 
   double g = 0.0;
   for (int i = obj_size - 1; i < param_size; i++)
-    g += powf(params[i] - 0.5, 2.0);
+    g += powf(params[i * step_size] - 0.5, 2.0);
 
   // different first iteration
   double f = (1 + g);
   for (int j = 0; j < obj_size - 1; j++)
-    f *= cosf(params[j] * CUDART_PI_F / 2);
+    f *= cosf(params[j * step_size] * CUDART_PI_F / 2);
   objectives[0] = f;
 
   for (int i = 1; i < obj_size; i++) {
     f = (1 + g);
     for (int j = 0; j < obj_size - i - 1; j++)
-      f *= cosf(params[j] * CUDART_PI_F / 2);
+      f *= cosf(params[j * step_size] * CUDART_PI_F / 2);
 
-    f *= sinf(params[obj_size - i - 1] * CUDART_PI_F / 2);
+    f *= sinf(params[(obj_size - i - 1) * step_size] * CUDART_PI_F / 2);
 
-    objectives[i] = f;
+    objectives[i * step_size] = f;
   }
 }
 
@@ -117,25 +117,25 @@ __device__ void dtlz3( float *params, float *objectives, int param_size, int obj
 
 	double g = 0.0;
 	for (int i = obj_size - 1; i < param_size; i++) {
-		g += powf(params[i] - 0.5, 2.0)
-				- cosf(20.0 * CUDART_PI_F * (params[i] - 0.5));
+		g += powf(params[i * step_size] - 0.5, 2.0)
+				- cosf(20.0 * CUDART_PI_F * (params[i * step_size] - 0.5));
 	}
 	g = 1.0 + 100.0 * (param_size - obj_size + 1 + g);
 
   // different first iteration
   double f = g;
   for (int j = 0; j < obj_size - 1; j++)
-    f *= cosf(params[j] * CUDART_PI_F / 2);
+    f *= cosf(params[j * step_size] * CUDART_PI_F / 2);
   objectives[0] = f;
 
   for (int i = 1; i < obj_size; i++) {
     f = g;
     for (int j = 0; j < obj_size - i - 1; j++)
-      f *= cosf(params[j] * CUDART_PI_F / 2);
+      f *= cosf(params[j * step_size] * CUDART_PI_F / 2);
 
-    f *= sinf(params[obj_size - i - 1] * CUDART_PI_F / 2);
+    f *= sinf(params[(obj_size - i - 1) * step_size] * CUDART_PI_F / 2);
 
-    objectives[i] = f;
+    objectives[i * step_size] = f;
   }
 }
 
@@ -154,22 +154,22 @@ __device__ void dtlz4( float *params, float *objectives, int param_size, int obj
   double g = 0.0;
   double alpha = 100.0;
   for (int i = obj_size - 1; i < param_size; i++)
-    g += powf(params[i] - 0.5,2);
+    g += powf(params[i * step_size] - 0.5,2);
 
   // different first iteration
   double f = (1 + g);
   for (int j = 0; j < obj_size - 1; j++)
-    f *= cos( powf(params[j], alpha) * CUDART_PI_F / 2);
+    f *= cos( powf(params[j * step_size], alpha) * CUDART_PI_F / 2);
   objectives[0] = f;
 
   for (int i = 1; i < obj_size; i++) {
     f = (1 + g);
     for (int j = 0; j < obj_size - i - 1; j++)
-      f *= cos( powf(params[j], alpha) * CUDART_PI_F / 2);
+      f *= cos( powf(params[j * step_size], alpha) * CUDART_PI_F / 2);
 
-    f *= sin( powf(params[obj_size - i - 1], alpha) * CUDART_PI_F / 2);
+    f *= sin( powf(params[(obj_size - i - 1) * step_size], alpha) * CUDART_PI_F / 2);
 
-    objectives[i] = f;
+    objectives[i * step_size] = f;
   }
 }
 
@@ -190,14 +190,14 @@ __device__ void dtlz5( float *params, float *objectives, int param_size, int obj
   float theta[OBJS-1];
 
   for (int i = obj_size - 1; i < param_size; i++) {
-    g += powf(params[i]-0.5,2);
+    g += powf(params[i * step_size]-0.5,2);
   }
 
   t = CUDART_PI_F /(4 * (1 + g));
 
   theta[0]= (CUDART_PI_F / 2) * params[0];
   for (int i = 1; i < obj_size - 1 ; i++)
-    theta[i]=  t * (1 + 2 * g * params[i]);
+    theta[i]=  t * (1 + 2 * g * params[i * step_size]);
 
   double f = 1 + g;
   for (int j = 0; j < obj_size - 1; j++)
@@ -211,7 +211,7 @@ __device__ void dtlz5( float *params, float *objectives, int param_size, int obj
 
     f *= sinf(theta[obj_size - i - 1]);
 
-    objectives[i] = f;
+    objectives[i * step_size] = f;
   }
 }
 
@@ -232,13 +232,13 @@ __device__ void dtlz6( float *params, float *objectives, int param_size, int obj
   float theta[OBJS-1];
 
   for (int i = obj_size - 1; i < param_size; i++)
-    g += powf(params[i],0.1);
+    g += powf(params[i * step_size],0.1);
 
   t = CUDART_PI_F /(4 * (1 + g));
 
   theta[0]= (CUDART_PI_F / 2) * params[0];
   for (int i = 1; i < obj_size - 1 ; i++)
-    theta[i]=  t * (1 + 2 * g * params[i]);
+    theta[i]=  t * (1 + 2 * g * params[i * step_size]);
 
   double f = 1 + g;
   for (int j = 0; j < obj_size - 1; j++)
@@ -252,7 +252,7 @@ __device__ void dtlz6( float *params, float *objectives, int param_size, int obj
 
     f *= sinf(theta[obj_size - i - 1]);
 
-    objectives[i] = f;
+    objectives[i * step_size] = f;
   }
 }
 
