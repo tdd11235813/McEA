@@ -1,3 +1,7 @@
+#include <string>
+
+using namespace std;
+
 #ifndef UTIL_H_INCLUDED
 #define UTIL_H_INCLUDED
 
@@ -7,9 +11,7 @@ void printVector( float *, int );
 
 float get_objective_sum( float *, int , int );
 
-void write_objectives( float *objectives, char *folder, char *run );
-
-void write_info( float runtime, char *folde, char *run );
+void write_objectives( float *objectives, string folder, string run );
 
 /*! is used for easy access to float4 and int4 variables */
 typedef union {
@@ -21,4 +23,5 @@ typedef union {
     int arr[4];
 } int4_union;
 
+void write_info( float runtime, string folder, string run );
 #endif

@@ -116,14 +116,13 @@ double weighted_fitness( float *objectives, int x, int y ) {
 void mcea( float *population, float *objectives, default_random_engine rng_state ) {
   float offspring[PARAMS];
   float offspring_fit[OBJS];
-  void (*dtlz_ptr[])(float*,float*,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
 
   omp_set_num_threads( THREADS );
 
   // ### evaluation ###
   #pragma omp parallel for
   for (size_t idx = 0; idx < POP_SIZE + 1; idx++) {
-      (*dtlz_ptr[DTLZ])( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
+      dtlz( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
   }
 
   // init random distributions
@@ -180,7 +179,7 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
         if( idx == 0 && VERBOSE )
           printf( "xover: %d\n", x_over_point );
 
-        for (size_t i = 0; i < PARAMS; i++)
+        for (int i = 0; i < PARAMS; i++)
           offspring[i] = (i<x_over_point) ? population[i + idx * PARAMS] : population[i + neighbor_sel * PARAMS];
 
         if( idx == 0 && VERBOSE ) {
@@ -195,7 +194,7 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
         if( idx == 0 && VERBOSE )
           printf( "mut: %d\n", num_mutations );
 
-        for (size_t i = 0; i < num_mutations; i++) {
+        for (int i = 0; i < num_mutations; i++) {
           int mut_location = uni_params[thread_idx]( rng_state );
           offspring[mut_location] = uni_allel[thread_idx]( rng_state );
         }
@@ -211,7 +210,7 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
         // == select if better
 
         // evaluate the offspring
-        (*dtlz_ptr[DTLZ])( offspring, offspring_fit, PARAMS, OBJS );
+        dtlz( offspring, offspring_fit, PARAMS, OBJS );
 
         if( idx == 0 && VERBOSE ) {
           printf( "offspring fit: " );
@@ -263,15 +262,11 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
 int main( int argc, char *argv[] ) {
 
   // get the output folder
-  string folder;
-  string run;
+  string folder = string("");
+  string run = string("0");
   if(argc > 1) {
     folder = string(argv[1]);
     run = string(argv[2]);  
-  }
-  else {
-    folder = string("");
-    run = string("0");
   }
 
   // allocate memory

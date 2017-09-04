@@ -9,11 +9,12 @@ Test them via:
 ```
 mkdir -p build/release
 cd build/release
-cmake -DCMAKE_BUILD_TYPE=Release -DCUDA_ARCH=<insert arch number here (e.g.: 52)> ../..
+cmake -DCMAKE_BUILD_TYPE=Release -DMCEA_CUDA_ARCH=<insert arch number here (e.g.: 52)> ../..
 make
 ```
 
-There is also a `-DCMAKE_BUILD_TYPE=Debug` build type available and if you omit the `-DCUDA_ARCH` cmake will try to find the cuda architecture itself (linux only).
+There is also a `-DCMAKE_BUILD_TYPE=Debug` build type available and if you omit the `-DMCEA_CUDA_ARCH` cmake will try to find the cuda architecture itself (linux only).
+If you use `ccmake`, you can also set the `MCEA_CUDA_ARCH` permanently to a cached value.
 
 
 After that multiple variants with different parameters are located in `build/release/gpu/` or `build.release/cpu/`.

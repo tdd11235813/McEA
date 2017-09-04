@@ -26,7 +26,9 @@ if(CUDA_FOUND)
 
   set( CUDA_SEPARABLE_COMPILATION ON)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/gpu)
-  set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+  # this breaks the Debug Build (-g flag is not propagated)
+  # if c++11 or c++14 flags cause problems, try to turn this on
+  # set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 
   FILE(GLOB CONFIG_FILES "./config/*.cmake" )
   FOREACH(CFILE ${CONFIG_FILES})
@@ -48,6 +50,7 @@ if(CUDA_FOUND)
         CUDA_NVCC_FLAGS
         -arch=sm_${MCEA_CUDA_ARCH}
         --relocatable-device-code true
+        --use_fast_math
         -DGENERATIONS=${GENERATIONS}
         -DPOP_WIDTH=${POP_WIDTH}
         -DPARAMS=${PARAMS}
