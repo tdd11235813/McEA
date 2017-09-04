@@ -63,5 +63,3 @@
 #define BLOCKDIM 16
 // the size of one whole block
 #define BLOCKSIZE (BLOCKDIM * BLOCKDIM)
-// calculate index from DTLZ number
-#define DTLZ (DTLZ_NUM - 1)

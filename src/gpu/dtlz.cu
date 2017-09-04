@@ -7,28 +7,32 @@
   Deb, K., Thiele, L., Laumanns, M., & Zitzler, E. (2005). Scalable test problems for evolutionary multiobjective optimization (pp. 105-145). Springer London.
 */
 
+
+#if DTLZ_NUM == 0
 /*!
   Test function. Performs the sum of all params and multiplies it with the respective objectives params.
+
   \param params pointer to array of param values
   \param objectives pointer to objective array
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
   \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void testObjSum( float *params, float *objectives, int param_size, int obj_size, int step_size) {
+__device__ void dtlz( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
-  float param_sum = 0.0;
-  for (size_t i = 0; i < param_size; i++) {
-    param_sum += params[i * step_size];
+    float param_sum = 0.0;
+    for (size_t i = 0; i < param_size; i++) {
+      param_sum += params[i * step_size];
+    }
+
+    for (size_t i = 0; i < obj_size; i++) {
+      objectives[i * step_size] = param_sum * i;
+    }
+
+    return;
   }
 
-  for (size_t i = 0; i < obj_size; i++) {
-    objectives[i * step_size] = param_sum * i;
-  }
-
-  return;
-}
-
+#elif DTLZ_NUM == 1
 /*! \brief Function of the DTLZ1 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ1 problem [deb2005scalable], given an array of parameters.
@@ -39,7 +43,7 @@ __device__ void testObjSum( float *params, float *objectives, int param_size, in
   \param obj_size number of elements in the objective array
   \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz1( float *params, float *objectives, int param_size, int obj_size, int step_size) {
+__device__ void dtlz( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
 		double g = 0.0;
 		for (int i = obj_size - 1; i < param_size; i++) {
@@ -70,6 +74,7 @@ __device__ void dtlz1( float *params, float *objectives, int param_size, int obj
     return;
 }
 
+#elif DTLZ_NUM == 2
 /*! \brief Function of the DTLZ2 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ2 problem [deb2005scalable], given an array of parameters.
@@ -80,7 +85,7 @@ __device__ void dtlz1( float *params, float *objectives, int param_size, int obj
   \param obj_size number of elements in the objective array
   \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz2( float *params, float *objectives, int param_size, int obj_size, int step_size) {
+__device__ void dtlz( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
   double g = 0.0;
   for (int i = obj_size - 1; i < param_size; i++)
@@ -103,6 +108,7 @@ __device__ void dtlz2( float *params, float *objectives, int param_size, int obj
   }
 }
 
+#elif DTLZ_NUM == 3
 /*! \brief Function of the DTLZ3 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ3 problem [deb2005scalable], given an array of parameters.
@@ -113,7 +119,7 @@ __device__ void dtlz2( float *params, float *objectives, int param_size, int obj
   \param obj_size number of elements in the objective array
   \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz3( float *params, float *objectives, int param_size, int obj_size, int step_size) {
+__device__ void dtlz( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
 	double g = 0.0;
 	for (int i = obj_size - 1; i < param_size; i++) {
@@ -139,6 +145,7 @@ __device__ void dtlz3( float *params, float *objectives, int param_size, int obj
   }
 }
 
+#elif DTLZ_NUM == 4
 /*! \brief Function of the DTLZ4 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ4 problem [deb2005scalable], given an array of parameters.
@@ -149,7 +156,7 @@ __device__ void dtlz3( float *params, float *objectives, int param_size, int obj
   \param obj_size number of elements in the objective array
   \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz4( float *params, float *objectives, int param_size, int obj_size, int step_size) {
+__device__ void dtlz( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
   double g = 0.0;
   double alpha = 100.0;
@@ -173,6 +180,7 @@ __device__ void dtlz4( float *params, float *objectives, int param_size, int obj
   }
 }
 
+#elif DTLZ_NUM == 5
 /*! \brief Function of the DTLZ5 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ5 problem [deb2005scalable], given an array of parameters.
@@ -183,7 +191,7 @@ __device__ void dtlz4( float *params, float *objectives, int param_size, int obj
   \param obj_size number of elements in the objective array
   \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz5( float *params, float *objectives, int param_size, int obj_size, int step_size) {
+__device__ void dtlz( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
   float g = 0.0;
   float t = 0.0;
@@ -215,6 +223,7 @@ __device__ void dtlz5( float *params, float *objectives, int param_size, int obj
   }
 }
 
+#elif DTLZ_NUM == 6
 /*! \brief Function of the DTLZ6 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ6 problem [deb2005scalable], given an array of parameters.
@@ -225,7 +234,7 @@ __device__ void dtlz5( float *params, float *objectives, int param_size, int obj
   \param obj_size number of elements in the objective array
   \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz6( float *params, float *objectives, int param_size, int obj_size, int step_size ) {
+__device__ void dtlz( float *params, float *objectives, int param_size, int obj_size, int step_size ) {
 
   float g = 0.0;
   float t = 0.0;
@@ -256,6 +265,7 @@ __device__ void dtlz6( float *params, float *objectives, int param_size, int obj
   }
 }
 
+#elif DTLZ_NUM == 7
 /*! \brief Function of the DTLZ7 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ7 problem [deb2005scalable], given an array of parameters.
@@ -266,7 +276,7 @@ __device__ void dtlz6( float *params, float *objectives, int param_size, int obj
   \param obj_size number of elements in the objective array
   \param step_size number of elements to skip between 2 parameters (should be the number of threads)
 */
-__device__ void dtlz7( float *params, float *objectives, int param_size, int obj_size, int step_size) {
+__device__ void dtlz( float *params, float *objectives, int param_size, int obj_size, int step_size) {
 
         float g = 0.0;
         float h = 0.0;
@@ -286,3 +296,4 @@ __device__ void dtlz7( float *params, float *objectives, int param_size, int obj
 
         objectives[(obj_size-1) * step_size] =  g * h;
 }
+#endif

@@ -8,6 +8,7 @@
 
 using namespace std;
 
+#if DTLZ_NUM == 0
 /*!
   Test function. Performs the sum of all params and multiplies it with the respective objectives params.
   \param params pointer to array of param values
@@ -15,7 +16,7 @@ using namespace std;
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
 */
-void testObjSum( float *params, float *objectives, int param_size, int obj_size ) {
+void dtlz( float *params, float *objectives, int param_size, int obj_size ) {
 
   float param_sum = 0.0;
   for (int i = 0; i < param_size; i++) {
@@ -29,6 +30,7 @@ void testObjSum( float *params, float *objectives, int param_size, int obj_size 
   return;
 }
 
+#elif DTLZ_NUM == 1
 /*! \brief Function of the DTLZ1 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ1 problem [deb2005scalable], given an array of parameters.
@@ -38,7 +40,7 @@ void testObjSum( float *params, float *objectives, int param_size, int obj_size 
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
 */
-void dtlz1( float *params, float *objectives, int param_size, int obj_size ) {
+void dtlz( float *params, float *objectives, int param_size, int obj_size ) {
 
 		double g = 0.0;
 		for (int i = obj_size - 1; i < param_size; i++) {
@@ -69,6 +71,7 @@ void dtlz1( float *params, float *objectives, int param_size, int obj_size ) {
     return;
 }
 
+#elif DTLZ_NUM == 2
 /*! \brief Function of the DTLZ2 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ2 problem [deb2005scalable], given an array of parameters.
@@ -78,7 +81,7 @@ void dtlz1( float *params, float *objectives, int param_size, int obj_size ) {
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
 */
-void dtlz2( float *params, float *objectives, int param_size, int obj_size ) {
+void dtlz( float *params, float *objectives, int param_size, int obj_size ) {
 
   double g = 0.0;
   for (int i = obj_size - 1; i < param_size; i++)
@@ -101,6 +104,7 @@ void dtlz2( float *params, float *objectives, int param_size, int obj_size ) {
   }
 }
 
+#elif DTLZ_NUM == 3
 /*! \brief Function of the DTLZ3 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ3 problem [deb2005scalable], given an array of parameters.
@@ -110,7 +114,7 @@ void dtlz2( float *params, float *objectives, int param_size, int obj_size ) {
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
 */
-void dtlz3( float *params, float *objectives, int param_size, int obj_size ) {
+void dtlz( float *params, float *objectives, int param_size, int obj_size ) {
 
 	double g = 0.0;
 	for (int i = obj_size - 1; i < param_size; i++) {
@@ -136,6 +140,7 @@ void dtlz3( float *params, float *objectives, int param_size, int obj_size ) {
   }
 }
 
+#elif DTLZ_NUM == 4
 /*! \brief Function of the DTLZ4 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ4 problem [deb2005scalable], given an array of parameters.
@@ -145,7 +150,7 @@ void dtlz3( float *params, float *objectives, int param_size, int obj_size ) {
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
 */
-void dtlz4( float *params, float *objectives, int param_size, int obj_size ) {
+void dtlz( float *params, float *objectives, int param_size, int obj_size ) {
 
   double g = 0.0;
   double alpha = 100.0;
@@ -169,6 +174,7 @@ void dtlz4( float *params, float *objectives, int param_size, int obj_size ) {
   }
 }
 
+#elif DTLZ_NUM == 5
 /*! \brief Function of the DTLZ5 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ5 problem [deb2005scalable], given an array of parameters.
@@ -178,7 +184,7 @@ void dtlz4( float *params, float *objectives, int param_size, int obj_size ) {
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
 */
-void dtlz5( float *params, float *objectives, int param_size, int obj_size ) {
+void dtlz( float *params, float *objectives, int param_size, int obj_size ) {
 
   float g = 0.0;
   float t = 0.0;
@@ -210,6 +216,7 @@ void dtlz5( float *params, float *objectives, int param_size, int obj_size ) {
   }
 }
 
+#elif DTLZ_NUM == 6
 /*! \brief Function of the DTLZ6 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ6 problem [deb2005scalable], given an array of parameters.
@@ -219,7 +226,7 @@ void dtlz5( float *params, float *objectives, int param_size, int obj_size ) {
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
 */
-void dtlz6( float *params, float *objectives, int param_size, int obj_size ) {
+void dtlz( float *params, float *objectives, int param_size, int obj_size ) {
 
   float g = 0.0;
   float t = 0.0;
@@ -250,6 +257,7 @@ void dtlz6( float *params, float *objectives, int param_size, int obj_size ) {
   }
 }
 
+#elif DTLZ_NUM == 7
 /*! \brief Function of the DTLZ7 multicriterial optimization problem
 
   Calculates the objectives for the DTLZ7 problem [deb2005scalable], given an array of parameters.
@@ -259,7 +267,7 @@ void dtlz6( float *params, float *objectives, int param_size, int obj_size ) {
   \param param_size number of elements in the param array
   \param obj_size number of elements in the objective array
 */
-void dtlz7( float *params, float *objectives, int param_size, int obj_size ) {
+void dtlz( float *params, float *objectives, int param_size, int obj_size ) {
 
         float g = 0.0;
         float h = 0.0;
@@ -279,3 +287,4 @@ void dtlz7( float *params, float *objectives, int param_size, int obj_size ) {
 
         objectives[obj_size-1] =  g * h;
 }
+#endif

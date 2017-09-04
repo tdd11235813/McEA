@@ -13,9 +13,6 @@
 #include "dtlz.cuh"
 #include "config.h"
 
-  //! pointers to the dtlz functions
-  __device__ void (*dtlz_funcs[])(float*,float*,int,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
-
 /*! \brief neighbor calculation
 
   For a given neighbor index this calculates the neighbors global position.
@@ -148,10 +145,9 @@ __global__ void calc_fitness( float *population, float *objectives ) {
   int x = threadIdx.x + blockIdx.x * blockDim.x;
   int y = threadIdx.y + blockIdx.y * blockDim.y;
   int idx = x + y * (POP_WIDTH + 1);
-  void (*dtlz_ptr)(float*, float*, int, int, int) = dtlz_funcs[DTLZ];
 
   if( x < POP_WIDTH + 1 && y < POP_WIDTH )
-    (*dtlz_ptr)( population+idx, objectives+idx, PARAMS, OBJS, POP_SIZE );
+    dtlz( population+idx, objectives+idx, PARAMS, OBJS, POP_SIZE );
 }
 
 /*! \brief McEA kernel
@@ -170,7 +166,6 @@ __global__ void calc_fitness( float *population, float *objectives ) {
 __global__ void mcea( float *population_in, float *objectives_in, float *population_out, float *objectives_out, curandStatePhilox4_32_10_t *rng_state ) {
   __shared__ float offspring[PARAMS * BLOCKSIZE];
   __shared__ float offspring_fit[OBJS * BLOCKSIZE];
-  void (*dtlz_ptr)(float*, float*, int, int, int) = dtlz_funcs[DTLZ];
   curandStatePhilox4_32_10_t rng_local;
 
   // global indices
@@ -242,7 +237,7 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
     // == select if better
 
     // evaluate the offspring
-    (*dtlz_ptr)( offspring + block_idx, offspring_fit + block_idx, PARAMS, OBJS, BLOCKSIZE );
+    dtlz( offspring + block_idx, offspring_fit + block_idx, PARAMS, OBJS, BLOCKSIZE );
 
     if( idx == 0 && VERBOSE ) {
       printf( "offspring fit: " );

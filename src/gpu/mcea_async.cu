@@ -7,6 +7,7 @@
 #include <math.h>
 #include <time.h>
 #include <string>
+#include <vector>
 
 // own header files
 #include "error.h"
@@ -15,9 +16,6 @@
 #include "config.h"
 
 using namespace std;
-
-  //! pointers to the dtlz functions
-  __device__ void (*dtlz_funcs[])(float*,float*,int,int,int) = { &dtlz1, &dtlz2, &dtlz3, &dtlz4, &dtlz5, &dtlz6, &dtlz7 };
 
 /*! \brief neighbor calculation
 
@@ -153,7 +151,6 @@ __device__ double weighted_fitness( float *objectives, int x, int y, int offset)
 __global__ void mcea( float *population, float *objectives, curandStatePhilox4_32_10_t *rng_state ) {
   __shared__ float offspring[PARAMS * BLOCKSIZE];
   __shared__ float offspring_fit[OBJS * BLOCKSIZE];
-  void (*dtlz_ptr)(float*, float*, int, int, int) = dtlz_funcs[DTLZ];
   curandStatePhilox4_32_10_t rng_local;
 
   // global indices
@@ -166,7 +163,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
   if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {
     rng_local = *(rng_state + idx);
     // ### evaluation ###
-    (*dtlz_ptr)( population+idx, objectives+idx, PARAMS, OBJS, POP_SIZE );
+    dtlz( population+idx, objectives+idx, PARAMS, OBJS, POP_SIZE );
   }
 
   // main loop
@@ -232,7 +229,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
       // == select if better
 
       // evaluate the offspring
-      (*dtlz_ptr)( offspring + block_idx , offspring_fit + block_idx, PARAMS, OBJS, BLOCKSIZE );
+      dtlz( offspring + block_idx , offspring_fit + block_idx, PARAMS, OBJS, BLOCKSIZE );
 
       if( idx == 0 && VERBOSE ) {
         printf( "offspring fit: " );
