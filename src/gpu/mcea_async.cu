@@ -87,6 +87,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
   curandStatePhilox4_32_10_t rng_local;
   float4_union randn_neigh_1, randn_neigh_2, randn_xover_point;
   int4_union randn_mut_count;
+  int fit_parent;
 
   // global indices
   int x = threadIdx.x + blockIdx.x * blockDim.x;
@@ -100,6 +101,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
     // ### evaluation ###
     dtlz( population+idx, objectives+idx, PARAMS, OBJS, POP_SIZE );
     calc_weights(x, y, weights + block_idx, BLOCKSIZE);
+    fit_parent =  weighted_fitness( objectives + idx, weights + block_idx, POP_SIZE );
   }
 
   // main loop
@@ -186,18 +188,18 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
       }
 
       // compare and copy
-      fit_1 =  weighted_fitness( objectives + idx, weights + block_idx, POP_SIZE );
       fit_2 =  weighted_fitness( offspring_fit + block_idx, weights + block_idx, BLOCKSIZE );
 
       if( idx == 0 && VERBOSE ) {
         printf( "offspring weight: %.5lf\n", fit_2 );
       }
 
-      if(fit_2 < fit_1) {
+      if(fit_2 < fit_parent) {
         for (size_t i = 0; i < PARAMS; i++)
           population[idx + i * POP_SIZE] = offspring[block_idx + BLOCKSIZE * i];
         for (size_t i = 0; i < OBJS; i++)
           objectives[idx + i * POP_SIZE] = offspring_fit[block_idx + BLOCKSIZE * i];
+        fit_parent = fit_2;
       }
 
       if( idx == 0 && VERBOSE ) {
