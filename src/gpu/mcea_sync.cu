@@ -8,9 +8,10 @@
 #include <time.h>
 
 // own header files
-#include "error.h"
 #include "util.cuh"
 #include "dtlz.cuh"
+#include "weighting.cuh"
+#include "error.h"
 #include "config.h"
 
 /*! \brief neighbor calculation
@@ -65,75 +66,6 @@ __device__ int rnd_uniform_int( curandStatePhilox4_32_10_t  *state, int values )
     return (int)truncf( curand_uniform( state ) * ( values - 0.000001) );
 }
 
-/*! \brief calculates the dot product for 2 vectors
-
-   Interprets the values at the pointers x and y as vectors of size 3 and calculates the dot product from them.
-   This is only aplicable for vectors of size 3!
-
-   \param[in] x pointer to the first operand
-   \param[in] y pointer to the second operand
-   \return the scalar value of the dot product
-*/
-__device__ float inner_product_3( float *x, float *y) {
-
-  return x[0] * y[0] + x[1] * y[1] + x[2] * y[2];
-}
-
-/*! \brief calculates the weighted fitness
-
-Takes the objective values of the individual at idx and calculates its fitness.
-The specific weights for the individual at location x,y in the population are used for weighting.
-! This only works for 3 objectives for now !
-TODO: for real world problems use the weighted tchebychev method (use utopia vector)
-
-\param[in] objectives pointer to the first objective value of the individual
-\param[in] x the x location of the weighting basis (does not have to be the same ind the objectives are from)
-\param[in] y the y location of the weighting basis (does not have to be the same ind the objectives are from)
-\param[in] offset the distance between two objective values in memory
-
-\return the weighted fitness value
-*/
-__device__ double weighted_fitness( float *objectives, int x, int y, int offset) {
-
-  // this decides if the individual is on the mirrored side of the population
-  // and gives the correction factor for the weights
-  int mirror = (x + y < POP_WIDTH)? false : true;
-
-  // calculate weights
-  float displacement = (mirror) ? 0.25              : 0.0;
-  int _x             = (mirror) ? POP_WIDTH - y - 1 : x;
-  int _y             = (mirror) ? POP_WIDTH - x     : y;
-
-  float weights[OBJS];
-  weights[0] = (1 - (_x+displacement)/(POP_WIDTH-0.5) - (_y+displacement)/(POP_WIDTH-0.5));
-  weights[1] = (_x+displacement)/(POP_WIDTH-0.5);
-  weights[2] = (_y+displacement)/(POP_WIDTH-0.5);
-
-  // normalize weight vector
-  float weight_length = sqrt(
-      weights[0] * weights[0] +
-      weights[1] * weights[1] +
-      weights[2] * weights[2] );
-  float weight_norm[] = { weights[0] / weight_length, weights[1] / weight_length, weights[2] / weight_length };
-
-  // normalize fitness
-  float obj_length = sqrt(
-      objectives[0]        * objectives[0] +
-      objectives[offset]   * objectives[offset] +
-      objectives[offset*2] * objectives[offset*2] );
-
-  float obj_norm[] = { 
-    objectives[0]        / obj_length,
-    objectives[offset]   / obj_length,
-    objectives[offset*2] / obj_length };
-
-  // calculate the fitness
-  return obj_length / pow( (double)inner_product_3( weight_norm, obj_norm), VADS_SCALE );
-  // numerical more stable version
-  // takes more time, needs a higher VADS_SCALE
-  //return exp( (VADS_SCALE + 1) * log( (double)obj_length ) - VADS_SCALE * log( (double)inner_product_3( weight_norm,  obj_norm) ) );
-}
-
 /*! \brief fitness kernel
 
    This kernel calculates the initial fitness of all randomly generated individuals.
@@ -166,6 +98,7 @@ __global__ void calc_fitness( float *population, float *objectives ) {
 __global__ void mcea( float *population_in, float *objectives_in, float *population_out, float *objectives_out, curandStatePhilox4_32_10_t *rng_state ) {
   __shared__ float offspring[PARAMS * BLOCKSIZE];
   __shared__ float offspring_fit[OBJS * BLOCKSIZE];
+  __shared__ float weights[OBJS * BLOCKSIZE];
   curandStatePhilox4_32_10_t rng_local;
 
   // global indices
@@ -176,7 +109,9 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
   int block_idx = (blockDim.x * threadIdx.y + threadIdx.x);
 
   if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {
+    // preparation
     rng_local = *(rng_state + idx);
+    calc_weights(x, y, weights + block_idx, BLOCKSIZE);
 
     // ### pairing ###
     // random neighbors
@@ -184,8 +119,8 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
     int neighbor_2 = get_neighbor( x, y, rnd_uniform_int( &rng_local, N_WIDTH * N_WIDTH ) );
 
     // compare neighbors
-    double fit_1 =  weighted_fitness( objectives_in + neighbor_1, x, y, POP_SIZE);
-    double fit_2 =  weighted_fitness( objectives_in + neighbor_2, x, y, POP_SIZE);
+    double fit_1 =  weighted_fitness( objectives_in + neighbor_1, weights + block_idx, POP_SIZE);
+    double fit_2 =  weighted_fitness( objectives_in + neighbor_2, weights + block_idx, POP_SIZE);
     int neighbor_sel = (fit_1 < fit_2)? neighbor_1 : neighbor_2;
 
     if( idx == 0 && VERBOSE )
@@ -247,8 +182,8 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
     }
 
     // compare and copy
-    fit_1 =  weighted_fitness( objectives_in + idx, x, y, POP_SIZE );
-    fit_2 =  weighted_fitness( offspring_fit + block_idx, x, y, BLOCKSIZE );
+    fit_1 =  weighted_fitness( objectives_in + idx, weights + block_idx, POP_SIZE );
+    fit_2 =  weighted_fitness( offspring_fit + block_idx, weights + block_idx, BLOCKSIZE );
 
     if( idx == 0 && VERBOSE )
       printf( "offspring weight: %.5lf\n", fit_2 );

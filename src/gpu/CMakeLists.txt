@@ -68,10 +68,12 @@ if(CUDA_FOUND)
         mcea_sync.cu
         util.cu
         dtlz.cu
+        weighting.cu
         config.h
         error.h
         dtlz.cuh
         util.cuh
+        weighting.cuh
         )
 
     cuda_add_executable(
@@ -79,10 +81,12 @@ if(CUDA_FOUND)
         mcea_async.cu
         util.cu
         dtlz.cu
+        weighting.cu
         config.h
         error.h
         dtlz.cuh
         util.cuh
+        weighting.cuh
         )
 
     # For linking ...
