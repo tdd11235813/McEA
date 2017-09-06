@@ -228,7 +228,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
 
       for (size_t i = 0; i < num_mutations; i++) {
         int mut_location = trans_uniform_int( curand_uniform(&rng_local), PARAMS );
-        offspring[block_idx * PARAMS + mut_location] = curand_uniform( &rng_local );
+        offspring[block_idx + BLOCKSIZE * mut_location] = curand_uniform( &rng_local );
       }
 
       if( idx == 0 && VERBOSE ) {
