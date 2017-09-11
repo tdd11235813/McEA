@@ -1,107 +1,24 @@
 /*! \file mcea.cpp
-  Main algorithm. Starts the calculations via OpenCL.
+  Main algorithm. Starts the calculations via OpenMP.
 */
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
 #include <random>
+#include <iostream>
 #include <omp.h>
 #include <numeric>
 #include <cmath>
 
 // own header files
-#include "util.h"
-#include "dtlz.h"
+#include "../util/output.h"
+#include "../util/dtlz.h"
+#include "../util/neighbor.h"
+#include "../util/weighting.h"
+#include "../util/random.h"
 #include "config.h"
 
 using namespace std;
-
-/*! \brief neighbor calculation
-
-  For a given neighbor index this calculates the neighbors global position.
-  The neighbor index is a number representing the position of the neighbor in the neighborhood of the individual.
-  It is organized rowwise starting at the top-left individual in the neighborhood (index = 0). When there is an
-  overflow in any of the directions, the global index will be wrapped around to the other side of the population.
-
-  \param[in] x the x position of the original individual
-  \param[in] y the y position of the original individual
-  \param[in] neighbor_index the position of the neighbor relative to the original. Allowed values depend on the population size.
-
-  \return the global index of the neighbor
-*/
-int get_neighbor(int x, int y, int neighbor_index) {
-  // 2D indices
-  int n_x = (x + neighbor_index % N_WIDTH - N_RAD + POP_WIDTH + 1) % (POP_WIDTH + 1);
-  int n_y = (y + neighbor_index / N_WIDTH - N_RAD + POP_WIDTH) % POP_WIDTH;
-
-  // global index
-  return n_x + n_y * (POP_WIDTH + 1);
-}
-
-/*! \brief init PRNG
-
-Initializes one pseudo random number generator for each thread.
-
-\param[in] seed the seed for initialization
-
-\return nothing
-*/
-default_random_engine rand_init( long seed ) {
-
-  default_random_engine generator( seed );
-  return generator;
-}
-
-/*! \brief calculates the weighted fitness
-
-Takes the objective values of the individual at idx and calculates its fitness.
-The specific weights for the individual at location x,y in the population are used for weighting.
-The weights are applied via the VADS method [hughes2003multiple] to the objective vector.
-! This only works for 3 objectives for now !
-TODO: implement utopia vector
-
-\param[in] objectives pointer to the objective values of the individual
-\param[in] x the x location of the weighting basis (does not have to be the same ind the objectives are from)
-\param[in] y the y location of the weighting basis (does not have to be the same ind the objectives are from)
-
-\return the weighted fitness value
-*/
-double weighted_fitness( float *objectives, int x, int y ) {
-  // this decides if the individual is on the mirrored side of the population
-  // and gives the correction factor for the weights
-  int mirror = (x + y < POP_WIDTH)? false : true;
-
-  // calculate weights
-  float offset =  (mirror) ? 0.25 : 0.0;
-  int _x  =  (mirror) ? POP_WIDTH - y - 1 : x;
-  int _y  =  (mirror) ? POP_WIDTH - x : y;
-
-  float weights[OBJS];
-  weights[0] = (1 - (_x+offset)/(POP_WIDTH-0.5) - (_y+offset)/(POP_WIDTH-0.5));
-  weights[1] = (_x+offset)/(POP_WIDTH-0.5);
-  weights[2] = (_y+offset)/(POP_WIDTH-0.5);
-
-  // normalize weight vector
-  float weight_length = sqrt(
-      weights[0] * weights[0] +
-      weights[1] * weights[1] +
-      weights[2] * weights[2] );
-  double weight_norm[] = { weights[0] / (double)weight_length, weights[1] / (double)weight_length, weights[2] / (double)weight_length };
-
-  // normalize fitness
-  float obj_length = sqrt(
-      objectives[0] * objectives[0] +
-      objectives[1] * objectives[1] +
-      objectives[2] * objectives[2] );
-  double obj_norm[] = { objectives[0] / (double)obj_length, objectives[1] / (double)obj_length, objectives[2] / (double)obj_length };
-
-  // calculate the fitness
-  return obj_length / pow( inner_product( weight_norm, weight_norm + 3, obj_norm, 0.0 ), VADS_SCALE );
-  // numerical more stable version
-  // takes a little bit more time
-  // dont use normalization for that!
-  //return exp( (VADS_SCALE + 1) * log( obj_length ) - VADS_SCALE * log( inner_product( weights, weights + 3, objectives, 0.0 ) ) );
-}
 
 /*! \brief McEA loop
 
@@ -122,7 +39,7 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
   // ### evaluation ###
   #pragma omp parallel for
   for (size_t idx = 0; idx < POP_SIZE + 1; idx++) {
-      dtlz( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS );
+      dtlz( population+idx*PARAMS, objectives+idx*OBJS, PARAMS, OBJS, 1 );
   }
 
   // init random distributions
@@ -150,6 +67,8 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
 
         int idx = x + y * (POP_WIDTH + 1);
         int thread_idx = omp_get_thread_num();
+        float weights[OBJS];
+        calc_weights(x, y, weights, 1);
 
         // ### pairing ###
         // random neighbors
@@ -157,8 +76,8 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
         int neighbor_2 = get_neighbor( x, y, uni_neighbors[thread_idx]( rng_state ) );
 
         // compare neighbors
-        double fit_1 = weighted_fitness( objectives + neighbor_1 * OBJS, x, y );
-        double fit_2 = weighted_fitness( objectives + neighbor_2 * OBJS, x, y );
+        double fit_1 = weighted_fitness( objectives + neighbor_1 * OBJS, weights, 1 );
+        double fit_2 = weighted_fitness( objectives + neighbor_2 * OBJS, weights, 1 );
         int neighbor_sel = (fit_1 < fit_2)? neighbor_1 : neighbor_2;
 
         if( idx == 0 && VERBOSE )
@@ -210,7 +129,7 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
         // == select if better
 
         // evaluate the offspring
-        dtlz( offspring, offspring_fit, PARAMS, OBJS );
+        dtlz( offspring, offspring_fit, PARAMS, OBJS, 1 );
 
         if( idx == 0 && VERBOSE ) {
           printf( "offspring fit: " );
@@ -220,8 +139,8 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
         }
 
         // compare and copy
-        fit_1 = weighted_fitness( objectives + idx * OBJS, x, y );
-        fit_2 = weighted_fitness( offspring_fit, x, y );
+        fit_1 = weighted_fitness( objectives + idx * OBJS, weights, 1 );
+        fit_2 = weighted_fitness( offspring_fit, weights, 1 );
 
         if( idx == 0 && VERBOSE ) {
           printf( "offspring weight: %.5lf\n", fit_2 );

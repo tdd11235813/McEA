@@ -1,5 +1,9 @@
-#include "config.h"
-
+#ifdef __CUDACC__
+#include "../gpu/config.h"
+#else
+#include "math.h"
+#include "../cpu/config.h"
+#endif
 /*! \brief applies the weights to the given vector
 
    Interprets the values at the pointers x and y as vectors of size 3 and calculates the dot product from them.
@@ -10,7 +14,10 @@
    \param[in] offset the memory offset for the values of x
    \return the scalar value of the dot product
 */
-__device__ float weight_multiply( float *x, float *y, int offset ) {
+#ifdef __CUDACC__
+__device__
+#endif
+float weight_multiply( float *x, float *y, int offset ) {
 
   return x[0] * y[0] + x[offset] * y[1] + x[2*offset] * y[2];
 }
@@ -25,7 +32,10 @@ Takes the position (x, y) of the individual in the population and calculates the
 \param[out] weights a pointer to the location, where the weights will be stored
 \param[in] offset the distance between two weight values in memory
 */
-__device__ void calc_weights( int x, int y, float *weights, const int offset) {
+#ifdef __CUDACC__
+__device__
+#endif
+void calc_weights( int x, int y, float *weights, int offset) {
 
   // this decides if the individual is on the mirrored side of the population
   // and gives the correction factor for the weights
@@ -65,7 +75,10 @@ TODO: for real world problems use the weighted tchebychev method (use utopia vec
 
 \return the weighted fitness value
 */
-__device__ double weighted_fitness( float *objectives, float *weights, int offset) {
+#ifdef __CUDACC__
+__device__
+#endif
+double weighted_fitness( float *objectives, float *weights, int offset) {
 
   // normalize fitness
   float obj_length = sqrt(
@@ -79,9 +92,11 @@ __device__ double weighted_fitness( float *objectives, float *weights, int offse
     objectives[offset*2] / obj_length };
 
   // calculate the fitness
-  return obj_length / pow( (double)weight_multiply( weights, obj_norm, BLOCKSIZE), VADS_SCALE );
-  // numerical more stable version
-  // takes more time, needs a higher VADS_SCALE
-  //return exp( (VADS_SCALE + 1) * log( (double)obj_length ) - VADS_SCALE * log( (double)inner_product_3( weight_norm,  obj_norm) ) );
+#ifdef __CUDACC__
+  int weight_offset = BLOCKSIZE;
+#else
+  int weight_offset = 1;
+#endif
+  return obj_length / pow( (double)weight_multiply( weights, obj_norm, weight_offset), VADS_SCALE );
 }
 

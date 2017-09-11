@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#ifdef __CUDACC__
 static void HandleError( cudaError_t err,
                          const char *file,
                          int line ) {
@@ -10,3 +11,4 @@ static void HandleError( cudaError_t err,
     }
 }
 #define ERR( err ) (HandleError( err, __FILE__, __LINE__ ))
+#endif

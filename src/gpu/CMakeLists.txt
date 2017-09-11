@@ -66,27 +66,35 @@ if(CUDA_FOUND)
     cuda_add_executable(
         mcea_sync${CONFIG}
         mcea_sync.cu
-        util.cu
-        dtlz.cu
-        weighting.cu
+        ../util/output.cu
+        ../util/random.cu
+        ../util/dtlz.cu
+        ../util/weighting.cu
+        ../util/neighbor.cu
         config.h
-        error.h
-        dtlz.cuh
-        util.cuh
-        weighting.cuh
+        ../util/error.h
+        ../util/dtlz.cuh
+        ../util/output.cuh
+        ../util/random.cuh
+        ../util/weighting.cuh
+        ../util/neighbor.cuh
         )
 
     cuda_add_executable(
         mcea_async${CONFIG}
         mcea_async.cu
-        util.cu
-        dtlz.cu
-        weighting.cu
+        ../util/output.cu
+        ../util/random.cu
+        ../util/dtlz.cu
+        ../util/weighting.cu
+        ../util/neighbor.cu
         config.h
-        error.h
-        dtlz.cuh
-        util.cuh
-        weighting.cuh
+        ../util/error.h
+        ../util/dtlz.cuh
+        ../util/output.cuh
+        ../util/random.cuh
+        ../util/weighting.cuh
+        ../util/neighbor.cuh
         )
 
     # For linking ...

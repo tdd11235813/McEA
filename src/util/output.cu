@@ -1,55 +1,16 @@
-/*! \file util.cpp
-  Utilities. Mostly to display results and generate data.
+/*! \file util.cu
+  Utilities to display and write results.
 */
 #include <stdlib.h>
 #include <time.h>
 #include <iostream>
-#include <iomanip>
 #include <fstream>
 #include <string>
 #include <sstream>
-#include "config.h"
+#include <iomanip>
+#include "../gpu/config.h"
 
 using namespace std;
-
-/*! Returns a random float number in [0,1). */
-float randomFloat()
-{
-      return (float)rand()/(float)RAND_MAX;
-}
-
-/*! Prints out a float vector of specifies length to stdout.
-
-  /param[in] vec pointer to the vector to print out
-  /param[in] size number of elements to print
-*/
-void printVector( float *vec, int size) {
-
-  printf( "(" );
-  for (int i = 0; i < size-1; i++) {
-    printf( "%f, ", vec[i] );
-  }
-  printf( "%f)\n", vec[size-1] );
-}
-
-/*! Get the minimal sum of the objectives of an individual.
-
-  \param[in] objectives a pointer to the objective values grouped for each individual
-  \param[in] num_population the number of individuals in the population
-  \param[in] num_objectives the number of objectives per individual
-*/
-float get_objective_sum( float *objectives, int num_population, int num_objectives) {
-  float min_sum = 50000;
-  for (int i = 0; i < num_population; i++) {
-    float obj_sum = 0;
-    for (int j = 0; j < num_objectives; j++) {
-      obj_sum += objectives[i * num_objectives + j];
-    }
-    min_sum = (obj_sum < min_sum) ? obj_sum : min_sum;
-  }
-
-  return min_sum;
-}
 
 /*! \brief writes the objectives into a file
 
@@ -60,9 +21,9 @@ The param OUTFILE is used as the filename and the extension '.obj' is appended.
 
 \param[in] objectives a pointer to the objectives array
 \param[in] folder the folder where the results are saved
-\param[in] run the number of the run, that is appended to the files
+\param[in] run the number and type of the run, that is appended to the files
 */
-void write_objectives( float *objectives, string folder, string run) {
+void write_objectives( float *objectives, string folder, string run ) {
 
   ostringstream filename;
   filename << folder << OUTFILE << "_" << run << ".obj";
@@ -76,7 +37,11 @@ void write_objectives( float *objectives, string folder, string run) {
 
   for (size_t i = 0; i < POP_SIZE; i++) {
     for (size_t j = 0; j < OBJS; j++) {
-      out_file << objectives[i*OBJS + j] << "\t";
+#ifdef __CUDACC__
+      out_file << objectives[i + j * POP_SIZE] << "\t";
+#else
+      out_file << objectives[i * OBJS + j] << "\t";
+#endif
     }
     out_file << "\n";
   }
@@ -87,14 +52,14 @@ void write_objectives( float *objectives, string folder, string run) {
 /*! \brief writes the runtime and config into a file
 
 Writes a file containing the configuration (the \#define values) and runtime of an optimization run.
-The runtime is written in s.
+The runtime is written in ms.
 The param OUTFILE is used as the filename and the extension '.obj' is appended.
 
 \param[in] runtime the duration of the calculations (with data copy, without file writing)
 \param[in] folder the folder where the results are saved
-\param[in] run the number of the run, that is appended to the files
+\param[in] run the number and type of the run, that is appended to the files
 */
-void write_info( float runtime, string folder, string run) {
+void write_info( float runtime, string folder, string run ) {
 
   ostringstream filename;
   filename << folder << OUTFILE << "_" << run << ".info";

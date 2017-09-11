@@ -26,11 +26,17 @@ FOREACH(CFILE ${CONFIG_FILES})
   add_executable(
       mcea_cpu${CONFIG}
       mcea.cpp
-      util.cpp
-      dtlz.cpp
+      ../util/output.cpp
+      ../util/dtlz.cpp
+      ../util/random.cpp
+      ../util/neighbor.cpp
+      ../util/weighting.cpp
       config.h
-      dtlz.h
-      util.h
+      ../util/dtlz.h
+      ../util/output.h
+      ../util/random.h
+      ../util/neighbor.h
+      ../util/weighting.h
       )
 
   target_compile_definitions(

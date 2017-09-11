@@ -2,17 +2,14 @@
 
 using namespace std;
 
-#ifndef UTIL_H_INCLUDED
-#define UTIL_H_INCLUDED
+#ifndef UTIL_CUH_INCLUDED
+#define UTIL_CUH_INCLUDED
 
-float randomFloat( void );
-
-void printVector( float *, int );
-
-float get_objective_sum( float *, int , int );
-
+// output functions
 void write_objectives( float *objectives, string folder, string run );
+void write_info( float runtime, string folder, string run );
 
+#ifdef __CUDACC__
 /*! is used for easy access to float4 and int4 variables */
 typedef union {
     float4 vec;
@@ -22,6 +19,6 @@ typedef union {
     uint4 vec;
     int arr[4];
 } int4_union;
+#endif
 
-void write_info( float runtime, string folder, string run );
 #endif

@@ -34,7 +34,7 @@
 
 #ifndef OUTFILE 
 // the base of the filename where the results shall be written
-#define OUTFILE out
+#define OUTFILE "out"
 #endif
 
 #ifndef DTLZ_NUM 
@@ -61,3 +61,4 @@
 #define VERBOSE false
 // calculate the index for the DTLZ_NUM
 #define DTLZ (DTLZ_NUM - 1)
+#define BLOCKSIZE 1
