@@ -3,23 +3,24 @@
 #else
 #include "math.h"
 #include "../cpu/config.h"
+#include <stdio.h>
 #endif
-/*! \brief applies the weights to the given vector
+/*! \brief applies the weights to the given objectives
 
-   Interprets the values at the pointers x and y as vectors of size 3 and calculates the dot product from them.
+   Interprets the values at the pointers weights and objectives as vectors of size 3 and calculates the dot product from them.
    This is only aplicable for vectors of size 3!
 
+   \param[in] objectives pointer to the values to multiply with
    \param[in] weigths pointer to the weight array
-   \param[in] values pointer to the values to multiply with
    \param[in] offset the memory offset for the values of x
    \return the scalar value of the dot product
 */
 #ifdef __CUDACC__
 __device__
 #endif
-float weight_multiply( float *x, float *y, int offset ) {
+float weight_multiply( float *objectives, float *weights, int offset ) {
 
-  return x[0] * y[0] + x[offset] * y[1] + x[2*offset] * y[2];
+  return objectives[0] * weights[0] + objectives[offset] * weights[1] + objectives[2*offset] * weights[2];
 }
 
 

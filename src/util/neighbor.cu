@@ -2,7 +2,10 @@
   Utilities to calculate neighbor positions.
 */
 
+#ifdef __CUDACC__
 #include "cuda.h"
+#endif
+
 #include "../gpu/config.h"
 
 /*! \brief neighbor calculation

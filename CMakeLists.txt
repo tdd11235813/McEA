@@ -18,3 +18,4 @@ message(">> Setting up ${CMAKE_BUILD_TYPE} build")
 
 add_subdirectory(./src/cpu/)
 add_subdirectory(./src/gpu/)
+add_subdirectory(./src/test/)

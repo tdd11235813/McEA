@@ -25,7 +25,7 @@ mcea_cpu
 mcea_cpu_dbg
 mcea_dbg
 
-test/
+./test/
 build/
 doc/gpu/
 doc/cpu/
