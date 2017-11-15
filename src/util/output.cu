@@ -38,8 +38,12 @@ void write_objectives( float *objectives, string folder, string run ) {
   for (size_t i = 0; i < POP_SIZE; i++) {
     for (size_t j = 0; j < OBJS; j++) {
 #ifdef __CUDACC__
+      out_file.precision(10);
+      out_file.setf( ios::fixed, ios::floatfield );
       out_file << objectives[i + j * POP_SIZE] << "\t";
 #else
+      out_file.precision(10);
+      out_file.setf( ios::fixed, ios::floatfield );
       out_file << objectives[i * OBJS + j] << "\t";
 #endif
     }

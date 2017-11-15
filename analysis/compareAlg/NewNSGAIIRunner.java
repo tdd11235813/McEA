@@ -36,8 +36,11 @@ import org.uma.jmetal.problem.multiobjective.dtlz.DTLZ6;
 import org.uma.jmetal.problem.multiobjective.dtlz.DTLZ7;
 import org.uma.jmetal.util.fileoutput.SolutionListOutput;
 import org.uma.jmetal.util.fileoutput.impl.DefaultFileOutputContext;
+import org.uma.jmetal.util.JMetalException;
 
 import java.io.FileNotFoundException;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.List;
 import java.util.Arrays;
 import java.nio.file.Paths;
@@ -46,6 +49,7 @@ import java.nio.file.Files;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.io.IOException;
+import java.lang.String;
 
 /**
  * Class to configure and run the NSGA-II algorithm
@@ -128,10 +132,20 @@ public class NewNSGAIIRunner extends AbstractAlgorithmRunner {
       "_r0_t1_vs0" +
       "_dt" + Constants.dtlzNum + "_" + runNumber;
 
-    new SolutionListOutput(population)
-      .setSeparator("\t")
-      .setFunFileOutputContext(new DefaultFileOutputContext(fileName + ".obj"))
-      .print();   
+    try {
+      BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(fileName + ".obj"));
+      int numberOfObjectives = population.get(0).getNumberOfObjectives();
+      for (int i = 0; i < population.size(); i++) {
+        for (int j = 0; j < numberOfObjectives; j++) {
+          bufferedWriter.write(
+              String.format("%1$1.10f", population.get(i).getObjective(j)) + "\t");
+        }
+        bufferedWriter.newLine();
+      }
+      bufferedWriter.close();
+    } catch (IOException e) {
+      throw new JMetalException("Error writing data ", e) ;
+    }    
 
     writeInfos(fileName, computingTime);
   }

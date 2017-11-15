@@ -1,5 +1,5 @@
 #! /bin/bash
-solution_folder="/home/est/cloud/promotion/code/McEA/analysis/solutions_dtlz/"
+solution_folder="/home/est/data/experiment"
 
 if [ $# -ne 3 ]; then
   echo "usage: ${0} <bin or javaconfig-folder> <out-folder> <run-script>"

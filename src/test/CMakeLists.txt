@@ -1,8 +1,9 @@
-### CMakeLists.txt for CUDA
+### CMakeLists.txt for the tests
 
 cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/test)
+set (CMAKE_CXX_STANDARD 11)
 
 add_executable(
     test_regular
