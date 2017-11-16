@@ -7,7 +7,7 @@ if [ $# -ne 3 ]; then
 fi
 
 # test for required scripts
-if [ ! -f ./bestPF.py ]; then
+if [ ! -f ../preprocess/bestPF.py ]; then
   echo "Please start the script from its parent folder. The script bestPF.py is required."
   exit
 fi
@@ -27,7 +27,7 @@ for pop in $results; do
   rfile=${pop##*/}
   rfile=${rfile%.obj}
   echo "[$counter/$len] calc PF: $rfile"
-  python bestPF.py $2/pareto_front/$rfile.pf $pop
+  python ../preprocess/bestPF.py $2/pareto_front/$rfile.pf $pop
 
   (( counter+=1 ))
 done

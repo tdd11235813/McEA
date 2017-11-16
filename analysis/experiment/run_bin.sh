@@ -2,7 +2,7 @@
 
 # run all the binaries
 mkdir -p $2/population
-iterations=30
+iterations=3
 counter=1
 binaries=`find $1 -name "mcea*"`
 len=`echo $binaries | wc -w`
