@@ -87,8 +87,8 @@ rownames(pval_mcea_arr) <- analyse_metrics
 # different mcea alg
 tuk_res_list <- lapply(aov_mcea_list, function(aov) TukeyHSD(aov)[[1]][, 4])
 tuk_res_mat <- matrix(unlist(tuk_res_list), ncol=3, byrow=TRUE)
-rownames(tuk_res_mat) <- analyse_metrics
-colnames(tuk_res_mat) <- names(tuk_res_list[[1]])
+colnames(tuk_res_mat) <- analyse_metrics
+rownames(tuk_res_mat) <- names(tuk_res_list[[1]])
 
 ### Testing effect size
 
@@ -100,8 +100,8 @@ VD_res <- matrix(unlist(lapply(analyse_metrics, function(metric) {
     VD.A(metric_df[[metric]][selection], metric_df$algor[selection])$estimate
   })
 })), ncol=3, byrow=TRUE)
-rownames(VD_res) <- analyse_metrics
-colnames(VD_res) <- apply(mcea_com, 2, function(algs) paste(algs[1], algs[2]))
+colnames(VD_res) <- analyse_metrics
+rownames(VD_res) <- apply(mcea_com, 2, function(algs) paste(algs[1], algs[2]))
 
 ### write the results
 

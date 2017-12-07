@@ -107,11 +107,12 @@ public class NewSPEA2Runner extends AbstractAlgorithmRunner {
     selection = new BinaryTournamentSelection<DoubleSolution>(
         new RankingAndCrowdingDistanceComparator<DoubleSolution>());
 
-    algorithm = new SPEA2Builder<DoubleSolution>(problem, crossover, mutation)
-        .setSelectionOperator(selection)
-        .setMaxIterations(Constants.generations)
-        .setPopulationSize(Constants.populationSize)
-        .build() ;
+    algorithm = new SPEA2StoppingByTime(problem, Constants.populationSize, Constants.runtime, crossover, mutation, selection);
+//    algorithm = new SPEA2Builder<DoubleSolution>(problem, crossover, mutation)
+//        .setSelectionOperator(selection)
+//        .setMaxIterations(Constants.generations)
+//        .setPopulationSize(Constants.populationSize)
+//        .build() ;
 
     AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm)
         .execute() ;
@@ -126,7 +127,7 @@ public class NewSPEA2Runner extends AbstractAlgorithmRunner {
       "_pw" + Constants.popWidth +
       "_p" + Constants.parameters +
       "_r0_t1_vs0" +
-      "_dt" + Constants.dtlzNum + "_" + runNumber;
+      "_dt" + Constants.dtlzNum + "_" + String.format("%02d", (int)runNumber);
 
     new SolutionListOutput(population)
       .setSeparator("\t")

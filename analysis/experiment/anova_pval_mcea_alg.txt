@@ -1,0 +1,5 @@
+1000 Gen -- ANOVA p-values: (p < 0.05: no equal means)
+Metric:   aov_mcea_alg
+EP     	   0.168
+HV     	   0.304
+RT     	6.01e-27

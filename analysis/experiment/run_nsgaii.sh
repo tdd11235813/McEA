@@ -2,7 +2,7 @@
 
 # run all the binaries
 mkdir -p $2/population
-iterations=3
+iterations=15
 counter=1
 configs=`find $1/config/ -maxdepth 1 -mindepth 1 -type d`
 len=`echo $configs | wc -w`

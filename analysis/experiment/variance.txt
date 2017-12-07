@@ -1,0 +1,65 @@
+Variance results:
+       algor	         gen	      EP_var	      HV_var	      RT_var
+                   cpu	                    10	          3.599691e-03	          1.454596e-10	          1.026043e+03
+      cpu_1.metrics.V2	                    10	                    NA	                    NA	                    NA
+      cpu_2.metrics.V2	                    10	                    NA	                    NA	                    NA
+      cpu_3.metrics.V2	                    10	                    NA	                    NA	                    NA
+      cpu_4.metrics.V2	                    10	                    NA	                    NA	                    NA
+      cpu_5.metrics.V2	                    10	                    NA	                    NA	                    NA
+      cpu_6.metrics.V2	                    10	                    NA	                    NA	                    NA
+                   cpu	                   100	          4.606334e-04	          4.389376e-05	          8.040621e+04
+      cpu_1.metrics.V2	                   100	                    NA	                    NA	                    NA
+      cpu_2.metrics.V2	                   100	                    NA	                    NA	                    NA
+      cpu_3.metrics.V2	                   100	                    NA	                    NA	                    NA
+      cpu_4.metrics.V2	                   100	                    NA	                    NA	                    NA
+      cpu_5.metrics.V2	                   100	                    NA	                    NA	                    NA
+      cpu_6.metrics.V2	                   100	                    NA	                    NA	                    NA
+                   cpu	                  1000	          2.080615e-05	          1.022342e-06	          4.995589e+06
+      cpu_1.metrics.V2	                  1000	                    NA	                    NA	                    NA
+      cpu_2.metrics.V2	                  1000	                    NA	                    NA	                    NA
+      cpu_3.metrics.V2	                  1000	                    NA	                    NA	                    NA
+      cpu_4.metrics.V2	                  1000	                    NA	                    NA	                    NA
+      cpu_5.metrics.V2	                  1000	                    NA	                    NA	                    NA
+      cpu_6.metrics.V2	                  1000	                    NA	                    NA	                    NA
+             gpu_async	                    10	          8.003531e-03	          0.000000e+00	          6.644981e-01
+gpu_async_1.metrics.V2	                    10	                    NA	                    NA	                    NA
+gpu_async_2.metrics.V2	                    10	                    NA	                    NA	                    NA
+gpu_async_3.metrics.V2	                    10	                    NA	                    NA	                    NA
+gpu_async_4.metrics.V2	                    10	                    NA	                    NA	                    NA
+gpu_async_5.metrics.V2	                    10	                    NA	                    NA	                    NA
+gpu_async_6.metrics.V2	                    10	                    NA	                    NA	                    NA
+              gpu_sync	                    10	          1.102360e-02	          0.000000e+00	          6.075352e-01
+ gpu_sync_1.metrics.V2	                    10	                    NA	                    NA	                    NA
+ gpu_sync_2.metrics.V2	                    10	                    NA	                    NA	                    NA
+ gpu_sync_3.metrics.V2	                    10	                    NA	                    NA	                    NA
+ gpu_sync_4.metrics.V2	                    10	                    NA	                    NA	                    NA
+ gpu_sync_5.metrics.V2	                    10	                    NA	                    NA	                    NA
+ gpu_sync_6.metrics.V2	                    10	                    NA	                    NA	                    NA
+             gpu_async	                   100	          7.843069e-04	          5.468339e-06	          3.559412e+00
+gpu_async_1.metrics.V2	                   100	                    NA	                    NA	                    NA
+gpu_async_2.metrics.V2	                   100	                    NA	                    NA	                    NA
+gpu_async_3.metrics.V2	                   100	                    NA	                    NA	                    NA
+gpu_async_4.metrics.V2	                   100	                    NA	                    NA	                    NA
+gpu_async_5.metrics.V2	                   100	                    NA	                    NA	                    NA
+gpu_async_6.metrics.V2	                   100	                    NA	                    NA	                    NA
+              gpu_sync	                   100	          3.766664e-04	          2.353922e-05	          2.960231e+00
+ gpu_sync_1.metrics.V2	                   100	                    NA	                    NA	                    NA
+ gpu_sync_2.metrics.V2	                   100	                    NA	                    NA	                    NA
+ gpu_sync_3.metrics.V2	                   100	                    NA	                    NA	                    NA
+ gpu_sync_4.metrics.V2	                   100	                    NA	                    NA	                    NA
+ gpu_sync_5.metrics.V2	                   100	                    NA	                    NA	                    NA
+ gpu_sync_6.metrics.V2	                   100	                    NA	                    NA	                    NA
+             gpu_async	                  1000	          1.360936e-05	          6.982253e-07	          5.230067e-01
+gpu_async_1.metrics.V2	                  1000	                    NA	                    NA	                    NA
+gpu_async_2.metrics.V2	                  1000	                    NA	                    NA	                    NA
+gpu_async_3.metrics.V2	                  1000	                    NA	                    NA	                    NA
+gpu_async_4.metrics.V2	                  1000	                    NA	                    NA	                    NA
+gpu_async_5.metrics.V2	                  1000	                    NA	                    NA	                    NA
+gpu_async_6.metrics.V2	                  1000	                    NA	                    NA	                    NA
+              gpu_sync	                  1000	          1.733847e-05	          9.263597e-07	          7.523826e+01
+ gpu_sync_1.metrics.V2	                  1000	                    NA	                    NA	                    NA
+ gpu_sync_2.metrics.V2	                  1000	                    NA	                    NA	                    NA
+ gpu_sync_3.metrics.V2	                  1000	                    NA	                    NA	                    NA
+ gpu_sync_4.metrics.V2	                  1000	                    NA	                    NA	                    NA
+ gpu_sync_5.metrics.V2	                  1000	                    NA	                    NA	                    NA
+ gpu_sync_6.metrics.V2	                  1000	                    NA	                    NA	                    NA

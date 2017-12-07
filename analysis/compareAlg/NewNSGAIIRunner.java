@@ -13,6 +13,7 @@
 import org.uma.jmetal.algorithm.Algorithm;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder;
+import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIStoppingByTime;
 import org.uma.jmetal.operator.CrossoverOperator;
 import org.uma.jmetal.operator.MutationOperator;
 import org.uma.jmetal.operator.SelectionOperator;
@@ -111,11 +112,12 @@ public class NewNSGAIIRunner extends AbstractAlgorithmRunner {
     selection = new BinaryTournamentSelection<DoubleSolution>(
         new RankingAndCrowdingDistanceComparator<DoubleSolution>());
 
-    algorithm = new NSGAIIBuilder<DoubleSolution>(problem, crossover, mutation)
-        .setSelectionOperator(selection)
-        .setMaxEvaluations(Constants.maxEvaluations)
-        .setPopulationSize(Constants.populationSize)
-        .build() ;
+    algorithm = new NSGAIIStoppingByTime(problem, Constants.populationSize, Constants.runtime, crossover, mutation, selection);
+//    algorithm = new NSGAIIBuilder<DoubleSolution>(problem, crossover, mutation)
+//        .setSelectionOperator(selection)
+//        .setMaxEvaluations(Constants.maxEvaluations)
+//        .setPopulationSize(Constants.populationSize)
+//        .build() ;
 
     AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm)
         .execute() ;
@@ -130,7 +132,7 @@ public class NewNSGAIIRunner extends AbstractAlgorithmRunner {
       "_pw" + Constants.popWidth +
       "_p" + Constants.parameters +
       "_r0_t1_vs0" +
-      "_dt" + Constants.dtlzNum + "_" + runNumber;
+      "_dt" + Constants.dtlzNum + "_" + String.format("%02d", (int)runNumber);
 
     try {
       BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(fileName + ".obj"));

@@ -2,7 +2,7 @@
 class Constants {
   // config constants
   public static final double mutationProbability = 0.01;
-  public static final int generations = 10;
+  public static final int generations = 20;
   public static final int popWidth = 10;
   public static final int parameters = 20;
   public static final int objectives = 3;
