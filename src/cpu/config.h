@@ -4,14 +4,14 @@
 
 // ### default values (overwritten by the files in /config)
 #ifndef STOPTYPE 
-// use values defined in Stoptypes:
+// Criterium that stops the generation loop. Available are:
 // - GENERATIONS: number of generations that the alg. performs
 // - TIME: the time in seconds, after which the algorithm shall be aborted (!only in CPU variant for now)
 #define STOPTYPE GENERATIONS
 #endif
 
 #ifndef STOPVALUE 
-// number of generations that the alg. performs
+// the value that is used to determine, when McEA stops (depends on the STOPTYPE)
 #define STOPVALUE 10
 #endif
 
@@ -33,7 +33,7 @@
 #endif
 
 #ifndef THREADS 
-// the number of threads to use in OpenMP
+// the number of threads to use in OpenMP (only CPU variant)
 #define THREADS 8
 #endif
 
