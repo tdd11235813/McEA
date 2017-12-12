@@ -79,18 +79,16 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
   for (size_t i = 0; i < THREADS; i++)
     uni_allel[i] = uniform_real_distribution<float>(0.0,1.0);
 
-#if STOPTYPE == TIME
-  // set the handler to stop optimization
-  signal(SIGALRM, &sigalrm_handler);
-  alarm(STOPVALUE);
-#endif
-
   // main loop
 #if STOPTYPE == GENERATIONS
   // stop after number of generations
   for (size_t g = 0; g < STOPVALUE; g++) {
     if ( g%10 == 0 )
 #elif STOPTYPE == TIME
+  // set the handler to stop the run
+  signal(SIGALRM, &sigalrm_handler);
+  alarm(STOPVALUE);
+
   // stop after timer expired
   while(true) {
     if(timer_expired)

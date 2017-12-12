@@ -1,12 +1,13 @@
 // type definition for the different stoptypes of McEA
+// (! don't define 0, because it is also the default value of undefined parameters)
+// - GENERATIONS: number of generations that the alg. performs
 #define GENERATIONS 1
+// - TIME: the time in seconds, after which the algorithm shall be aborted (!only in CPU variant for now)
 #define TIME 2
 
 // ### default values (overwritten by the files in /config)
 #ifndef STOPTYPE 
-// Criterium that stops the generation loop. Available are:
-// - GENERATIONS: number of generations that the alg. performs
-// - TIME: the time in seconds, after which the algorithm shall be aborted (!only in CPU variant for now)
+// Criterium that stops the generation loop. The available ones are documented above.
 #define STOPTYPE GENERATIONS
 #endif
 
