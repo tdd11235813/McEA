@@ -1,8 +1,18 @@
-// ### default values (overwritten by the files in /config)
+// type definition for the different stoptypes of McEA
+#define GENERATIONS 1
+#define TIME 2
 
-#ifndef GENERATIONS 
+// ### default values (overwritten by the files in /config)
+#ifndef STOPTYPE 
+// use values defined in Stoptypes:
+// - GENERATIONS: number of generations that the alg. performs
+// - TIME: the time in seconds, after which the algorithm shall be aborted (!only in CPU variant for now)
+#define STOPTYPE GENERATIONS
+#endif
+
+#ifndef STOPVALUE 
 // number of generations that the alg. performs
-#define GENERATIONS 10
+#define STOPVALUE 10
 #endif
 
 #ifndef POP_WIDTH 

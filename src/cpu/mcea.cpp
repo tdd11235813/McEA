@@ -9,6 +9,9 @@
 #include <omp.h>
 #include <numeric>
 #include <cmath>
+#include <cstdio>
+#include <unistd.h>
+#include <signal.h>
 
 // own header files
 #include "../util/output.h"
@@ -20,10 +23,27 @@
 
 using namespace std;
 
+// global flag, used to stop calculations
+sig_atomic_t timer_expired = 0;
+
+/*! \brief handler for the ALRM signal
+ *
+ * This manipulates the timer_expired flag, so that all threads stop at the next appropriate time.
+ * Especially offsprings that are created after the call to this handler are not processed.
+ * This means they can not become part of the population.
+ *
+ * \param[in] sig not used
+ */
+void sigalrm_handler(int sig)
+{
+  timer_expired = 1;
+}
+
 /*! \brief McEA loop
 
   This kernel runs the whole algorithm. All data structures have to be set up prior to this.
-  It uses the population and performs GENERATIONS generations, consisting of pairing, crossover, mutation, evaluation, and selection on it.
+  It uses the population and performs generations until the stopping criterion is reached, consisting of pairing, crossover, mutation, evaluation, and selection on it.
+  The available stopping criteria are GENERATIONS and TIME, for more information on that, read config.h.
   At the end the population contains the optimized individuals.
 
   \param[in,out] population an array containing all parameters of the whole population.
@@ -59,9 +79,28 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
   for (size_t i = 0; i < THREADS; i++)
     uni_allel[i] = uniform_real_distribution<float>(0.0,1.0);
 
+#if STOPTYPE == TIME
+  // set the handler to stop optimization
+  signal(SIGALRM, &sigalrm_handler);
+  alarm(STOPVALUE);
+#endif
+
   // main loop
-  for (size_t g = 0; g < GENERATIONS; g++) {
-    #pragma omp parallel for private( offspring, offspring_fit )
+#if STOPTYPE == GENERATIONS
+  // stop after number of generations
+  for (size_t g = 0; g < STOPVALUE; g++) {
+    if ( g%10 == 0 )
+#elif STOPTYPE == TIME
+  // stop after timer expired
+  while(true) {
+    if(timer_expired)
+      break;
+#else
+    cout << "no valid STOPTYPE. doing just one generation." << endl;
+    {
+#endif
+
+    #pragma omp parallel for private( offspring, offspring_fit ) shared( timer_expired )
     for (size_t x = 0; x < POP_WIDTH + 1; x++) {
       for (size_t y = 0; y < POP_WIDTH; y++) {
 
@@ -72,8 +111,7 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
 
         // ### pairing ###
         // random neighbors
-        int neighbor_1 = get_neighbor( x, y, uni_neighbors[thread_idx]( rng_state ) );
-        int neighbor_2 = get_neighbor( x, y, uni_neighbors[thread_idx]( rng_state ) );
+        int neighbor_1 = get_neighbor( x, y, uni_neighbors[thread_idx]( rng_state ) ); int neighbor_2 = get_neighbor( x, y, uni_neighbors[thread_idx]( rng_state ) );
 
         // compare neighbors
         double fit_1 = weighted_fitness( objectives + neighbor_1 * OBJS, weights, 1 );
@@ -125,46 +163,48 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
           printf( "\n" );
         }
 
-        // ### selection ###
-        // == select if better
+        if(!timer_expired) {
+          // ### selection ###
+          // == select if better
 
-        // evaluate the offspring
-        dtlz( offspring, offspring_fit, PARAMS, OBJS, 1 );
+          // evaluate the offspring
+          dtlz( offspring, offspring_fit, PARAMS, OBJS, 1 );
 
-        if( idx == 0 && VERBOSE ) {
-          printf( "offspring fit: " );
-          for (size_t i = 0; i < OBJS; i++)
-            printf( "%.2f, ", offspring_fit[i] );
-          printf( "\n" );
-        }
-
-        // compare and copy
-        fit_1 = weighted_fitness( objectives + idx * OBJS, weights, 1 );
-        fit_2 = weighted_fitness( offspring_fit, weights, 1 );
-
-        if( idx == 0 && VERBOSE ) {
-          printf( "offspring weight: %.5lf\n", fit_2 );
-        }
-
-        if(fit_2 < fit_1) {
-          for (size_t i = 0; i < PARAMS; i++) {
-            #pragma omp atomic write
-            population[i + idx * PARAMS] = offspring[i];
+          if(idx == 0 && VERBOSE) {
+            printf( "offspring fit: " );
+            for (size_t i = 0; i < OBJS; i++)
+              printf( "%.2f, ", offspring_fit[i] );
+            printf( "\n" );
           }
-          for (size_t i = 0; i < OBJS; i++) {
-            #pragma omp atomic write
-            objectives[i + idx * OBJS] = offspring_fit[i];
-          }
-        }
 
-        if( idx == 0 && VERBOSE ) {
-          printf( "new ind: " );
-          for (size_t i = 0; i < PARAMS; i++)
-            printf( "%.2f, ", population[i + idx * PARAMS] );
-          printf( "\n" );
-          for (size_t i = 0; i < OBJS; i++)
-            printf( "%.2f, ", objectives[i + idx * OBJS] );
-          printf( "\n" );
+          // compare and copy
+          fit_1 = weighted_fitness( objectives + idx * OBJS, weights, 1 );
+          fit_2 = weighted_fitness( offspring_fit, weights, 1 );
+
+          if( idx == 0 && VERBOSE ) {
+            printf( "offspring weight: %.5lf\n", fit_2 );
+          }
+
+          if(fit_2 < fit_1) {
+            for (size_t i = 0; i < PARAMS; i++) {
+              #pragma omp atomic write
+              population[i + idx * PARAMS] = offspring[i];
+            }
+            for (size_t i = 0; i < OBJS; i++) {
+              #pragma omp atomic write
+              objectives[i + idx * OBJS] = offspring_fit[i];
+            }
+          }
+
+          if( idx == 0 && VERBOSE ) {
+            printf( "new ind: " );
+            for (size_t i = 0; i < PARAMS; i++)
+              printf( "%.2f, ", population[i + idx * PARAMS] );
+            printf( "\n" );
+            for (size_t i = 0; i < OBJS; i++)
+              printf( "%.2f, ", objectives[i + idx * OBJS] );
+            printf( "\n" );
+          }
         }
       }
     }
