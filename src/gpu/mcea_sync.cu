@@ -6,6 +6,9 @@
 #include <curand_kernel.h>
 #include <math.h>
 #include <time.h>
+#include <unistd.h>
+#include <signal.h>
+#include <iostream>
 
 // own header files
 #include "../util/output.cuh"
@@ -15,6 +18,22 @@
 #include "../util/weighting.cuh"
 #include "../util/error.h"
 #include "config.h"
+
+// global flag, used to stop calculations
+sig_atomic_t timer_expired = 0;
+
+/*! \brief handler for the ALRM signal
+ *
+ * This manipulates the timer_expired flag, so that all threads stop at the next appropriate time.
+ * Especially offsprings that are created after the call to this handler are not processed.
+ * This means they can not become part of the population.
+ *
+ * \param[in] sig not used
+ */
+void sigalrm_handler(int sig)
+{
+  timer_expired = 1;
+}
 
 /*! \brief fitness kernel
 
@@ -118,51 +137,53 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
       printf( "\n" );
     }
 
-    // ### selection ###
-    // == select if better
+    // if( *stopflag == 0 ) {
+      // ### selection ###
+      // == select if better
 
-    // evaluate the offspring
-    dtlz( offspring + block_idx, offspring_fit + block_idx, PARAMS, OBJS, BLOCKSIZE );
+      // evaluate the offspring
+      dtlz( offspring + block_idx, offspring_fit + block_idx, PARAMS, OBJS, BLOCKSIZE );
 
-    if( idx == 0 && VERBOSE ) {
-      printf( "offspring fit: " );
-      for (size_t i = 0; i < OBJS; i++)
-        printf( "%.2f, ", offspring_fit[block_idx + BLOCKSIZE * i] );
-      printf( "\n" );
-    }
+      if( idx == 0 && VERBOSE ) {
+        printf( "offspring fit: " );
+        for (size_t i = 0; i < OBJS; i++)
+          printf( "%.2f, ", offspring_fit[block_idx + BLOCKSIZE * i] );
+        printf( "\n" );
+      }
 
-    // compare and copy
-    fit_1 =  weighted_fitness( objectives_in + idx, weights + block_idx, POP_SIZE );
-    fit_2 =  weighted_fitness( offspring_fit + block_idx, weights + block_idx, BLOCKSIZE );
+      // compare and copy
+      fit_1 =  weighted_fitness( objectives_in + idx, weights + block_idx, POP_SIZE );
+      fit_2 =  weighted_fitness( offspring_fit + block_idx, weights + block_idx, BLOCKSIZE );
 
-    if( idx == 0 && VERBOSE )
-      printf( "offspring weight: %.5lf\n", fit_2 );
+      if( idx == 0 && VERBOSE )
+        printf( "offspring weight: %.5lf\n", fit_2 );
 
-    if(fit_2 < fit_1) {
-      for (size_t i = 0; i < PARAMS; i++)
-        population_out[idx + i * POP_SIZE] = offspring[block_idx + BLOCKSIZE * i];
-      for (size_t i = 0; i < OBJS; i++)
-        objectives_out[idx + i * POP_SIZE] = offspring_fit[block_idx + BLOCKSIZE * i];
-    }
-    else {
-      for (size_t i = 0; i < PARAMS; i++)
-        population_out[idx + i * POP_SIZE] = population_in[idx + i * POP_SIZE];
-      for (size_t i = 0; i < OBJS; i++)
-        objectives_out[idx + i * POP_SIZE] = objectives_in[idx + i * POP_SIZE];
-    }
+      if(fit_2 < fit_1) {
+        for (size_t i = 0; i < PARAMS; i++)
+          population_out[idx + i * POP_SIZE] = offspring[block_idx + BLOCKSIZE * i];
+        for (size_t i = 0; i < OBJS; i++)
+          objectives_out[idx + i * POP_SIZE] = offspring_fit[block_idx + BLOCKSIZE * i];
+      }
+      else {
+        for (size_t i = 0; i < PARAMS; i++)
+          population_out[idx + i * POP_SIZE] = population_in[idx + i * POP_SIZE];
+        for (size_t i = 0; i < OBJS; i++)
+          objectives_out[idx + i * POP_SIZE] = objectives_in[idx + i * POP_SIZE];
+      }
 
 
-    if( idx == 0 && VERBOSE ) {
-      printf( "new ind: " );
-      for (size_t i = 0; i < PARAMS; i++)
-        printf( "%.2f, ", population_out[idx + i * POP_SIZE] );
-      printf( "\n" );
-      for (size_t i = 0; i < OBJS; i++)
-        printf( "%.2f, ", objectives_out[idx + i * POP_SIZE] );
-      printf( "\n" );
-    }
+      if( idx == 0 && VERBOSE ) {
+        printf( "new ind: " );
+        for (size_t i = 0; i < PARAMS; i++)
+          printf( "%.2f, ", population_out[idx + i * POP_SIZE] );
+        printf( "\n" );
+        for (size_t i = 0; i < OBJS; i++)
+          printf( "%.2f, ", objectives_out[idx + i * POP_SIZE] );
+        printf( "\n" );
+      }
 
-    *(rng_state + idx) = rng_local;
+      *(rng_state + idx) = rng_local;
+    // }
   }
 
   return;
@@ -185,6 +206,12 @@ int main( int argc, char *argv[] ) {
 
   run = string("sync_") + run;
 
+  //create the streams
+  cudaStream_t stream_1;
+  cudaStream_t stream_2;
+  cudaStreamCreate(&stream_1);
+  cudaStreamCreate(&stream_2);
+
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
   float *objectives_h = (float *)malloc( POP_SIZE * OBJS * sizeof(float) );
@@ -192,13 +219,17 @@ int main( int argc, char *argv[] ) {
   float *objectives1_d;
   float *population2_d;
   float *objectives2_d;
-
+//  int *stopflag_h;
+//  int *stopflag_d;
   curandStatePhilox4_32_10_t *d_state;
+  
   ERR( cudaMalloc( &d_state, POP_SIZE * sizeof(curandStatePhilox4_32_10_t) ) );
   ERR( cudaMalloc( (void**)&population1_d, POP_SIZE * PARAMS * sizeof(float) ) );
   ERR( cudaMalloc( (void**)&objectives1_d, POP_SIZE * OBJS * sizeof(float) ) );
   ERR( cudaMalloc( (void**)&population2_d, POP_SIZE * PARAMS * sizeof(float) ) );
   ERR( cudaMalloc( (void**)&objectives2_d, POP_SIZE * OBJS * sizeof(float) ) );
+//  ERR( cudaMallocHost( (void**)&stopflag_h, sizeof(int) ) );
+//  ERR( cudaMalloc( (void**)&stopflag_d, sizeof(int) ) );
 
   // setup random generator
   unsigned long seed = clock();
@@ -214,6 +245,8 @@ int main( int argc, char *argv[] ) {
 
   // copy data to GPU
   ERR( cudaMemcpy( population1_d, population_h, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyHostToDevice ) );
+//  *stopflag_h = 0;
+//  ERR( cudaMemcpy( stopflag_d, stopflag_h, sizeof(int), cudaMemcpyHostToDevice ) );
 
   // capture the start time
   cudaEvent_t     start, stop;
@@ -225,8 +258,22 @@ int main( int argc, char *argv[] ) {
   dim3 dimBlock(BLOCKDIM, BLOCKDIM);
   dim3 dimGrid(ceil((POP_WIDTH + 1) / (float)BLOCKDIM) , ceil(POP_WIDTH / (float)BLOCKDIM));
   calc_fitness<<<dimGrid, dimBlock>>>( population1_d, objectives1_d );
-  for (int i = 0; i < GENERATIONS; i++) {
-    mcea<<<dimGrid, dimBlock>>>( population1_d, objectives1_d, population2_d, objectives2_d, d_state );
+
+  // set the handler to stop the run
+  signal( SIGALRM, &sigalrm_handler );
+  alarm( 2 );
+
+  // stop after timer expired
+  int count = 0; // TMP: counter for kernel calls
+  while(true) {
+    if(timer_expired)
+      break;
+  //for (int i = 0; i < GENERATIONS; i++) {
+    mcea<<<dimGrid, dimBlock, 0, stream_1>>>( population1_d, objectives1_d, population2_d, objectives2_d, d_state);
+
+    // sync to avoid starting too many kernels
+    cudaDeviceSynchronize();
+    count++; // TMP
 
     // switch buffers
     float *tmp = population1_d;
@@ -237,6 +284,16 @@ int main( int argc, char *argv[] ) {
     objectives1_d = objectives2_d;
     objectives2_d = tmp;
   }
+
+  std::cout << "kernel calls: " << count << std::endl; // TMP
+
+//  // wait for the designated time
+//  sleep( 1 );
+//
+//  // send stop signal to gpu
+//  *stopflag_h = 1;
+//  //cudaMemcpy( variable_d, &variable_h, sizeof(int), cudaMemcpyHostToDevice );
+//  ERR( cudaMemcpyAsync( stopflag_d, stopflag_h, sizeof(int), cudaMemcpyHostToDevice, stream_2 ) );
 
   // get stop time, and display the timing results
   ERR( cudaEventRecord( stop, 0 ) );
