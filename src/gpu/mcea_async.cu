@@ -44,6 +44,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
   // blockwise indices
   int block_idx = (blockDim.x * threadIdx.y + threadIdx.x);
 
+  // init RNG, fitness and weights
   if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {
     rng_local = *(rng_state + idx);
     // ### evaluation ###
@@ -52,7 +53,6 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
     fit_parent =  weighted_fitness( objectives + idx, weights + block_idx, POP_SIZE );
   }
 
-  // main loop
   // main loop
 #if STOPTYPE == GENERATIONS
   // stop after number of generations
@@ -103,6 +103,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
           printf( "%.2f, ", objectives[i + idx * POP_SIZE] );
         printf( "\n" );
       }
+
       // ### crossover ###
       // == one-point crossover
       int x_over_point = trans_uniform_int( randn_xover_point.arr[g%4], PARAMS );
@@ -174,6 +175,8 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
         printf( "\n" );
       }
     }
+
+    // sync the block after every generation
     __syncthreads();
   }
 
@@ -257,4 +260,5 @@ int main(int argc, char *argv[]) {
 
   ERR( cudaFree( population_d ) );
   ERR( cudaFree( objectives_d ) );
+  ERR( cudaFree( d_state ) );
 }

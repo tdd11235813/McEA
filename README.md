@@ -38,11 +38,12 @@ you need to alter/add a file in `src/cpu/config/` (for the CPU variant) or `src/
 
 These files are filled with simple parameter - value pairs (divided by a space).
 If you leave a parameter out, a default value (from `src/cpu/config.h` or `src/gpu/config.cuh`) will be used.
+When you have added or altered a config file, you have to repeat the build process (cmake and make).
 The following parameters are available:
 
 | Parameter | Description |
 |-----------|-------------|
-| STOPTYPE | Criterium that stops the generation loop. Available are: <br> **GENERATIONS**: number of generations that the alg. performs <br> **TIME**: the time in seconds, after which the algorithm shall be aborted *(!only in CPU variant for now)* |
+| STOPTYPE | Criterium that stops the generation loop. Available are: <br> **GENERATIONS**: number of generations that the alg. performs <br> **TIME**: the time in seconds, after which the algorithm shall be aborted *(!only works for the CPU and GPU sync variant)* |
 | STOPVALUE | the value that is used to determine, when McEA stops (depends on the **STOPTYPE**) |
 | POP_WIDTH | the y-size of the population grid (in individuals) <br> can be adjusted at will, scales the memory usage quadratical |
 | N_RAD | the radius of the neighborhood around an individual <br> the neighborhood is square at all times |

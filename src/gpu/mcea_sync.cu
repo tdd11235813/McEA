@@ -24,9 +24,8 @@ sig_atomic_t timer_expired = 0;
 
 /*! \brief handler for the ALRM signal
  *
- * This manipulates the timer_expired flag, so that all threads stop at the next appropriate time.
- * Especially offsprings that are created after the call to this handler are not processed.
- * This means they can not become part of the population.
+ * This manipulates the timer_expired flag, so that there are no kernels started up onto this point.
+ * This means the last started generation will be processed fully. This is sufficiently accurate for now.
  *
  * \param[in] sig not used
  */
@@ -137,53 +136,51 @@ __global__ void mcea( float *population_in, float *objectives_in, float *populat
       printf( "\n" );
     }
 
-    // if( *stopflag == 0 ) {
-      // ### selection ###
-      // == select if better
+    // ### selection ###
+    // == select if better
 
-      // evaluate the offspring
-      dtlz( offspring + block_idx, offspring_fit + block_idx, PARAMS, OBJS, BLOCKSIZE );
+    // evaluate the offspring
+    dtlz( offspring + block_idx, offspring_fit + block_idx, PARAMS, OBJS, BLOCKSIZE );
 
-      if( idx == 0 && VERBOSE ) {
-        printf( "offspring fit: " );
-        for (size_t i = 0; i < OBJS; i++)
-          printf( "%.2f, ", offspring_fit[block_idx + BLOCKSIZE * i] );
-        printf( "\n" );
-      }
+    if( idx == 0 && VERBOSE ) {
+      printf( "offspring fit: " );
+      for (size_t i = 0; i < OBJS; i++)
+        printf( "%.2f, ", offspring_fit[block_idx + BLOCKSIZE * i] );
+      printf( "\n" );
+    }
 
-      // compare and copy
-      fit_1 =  weighted_fitness( objectives_in + idx, weights + block_idx, POP_SIZE );
-      fit_2 =  weighted_fitness( offspring_fit + block_idx, weights + block_idx, BLOCKSIZE );
+    // compare and copy
+    fit_1 =  weighted_fitness( objectives_in + idx, weights + block_idx, POP_SIZE );
+    fit_2 =  weighted_fitness( offspring_fit + block_idx, weights + block_idx, BLOCKSIZE );
 
-      if( idx == 0 && VERBOSE )
-        printf( "offspring weight: %.5lf\n", fit_2 );
+    if( idx == 0 && VERBOSE )
+      printf( "offspring weight: %.5lf\n", fit_2 );
 
-      if(fit_2 < fit_1) {
-        for (size_t i = 0; i < PARAMS; i++)
-          population_out[idx + i * POP_SIZE] = offspring[block_idx + BLOCKSIZE * i];
-        for (size_t i = 0; i < OBJS; i++)
-          objectives_out[idx + i * POP_SIZE] = offspring_fit[block_idx + BLOCKSIZE * i];
-      }
-      else {
-        for (size_t i = 0; i < PARAMS; i++)
-          population_out[idx + i * POP_SIZE] = population_in[idx + i * POP_SIZE];
-        for (size_t i = 0; i < OBJS; i++)
-          objectives_out[idx + i * POP_SIZE] = objectives_in[idx + i * POP_SIZE];
-      }
+    if(fit_2 < fit_1) {
+      for (size_t i = 0; i < PARAMS; i++)
+        population_out[idx + i * POP_SIZE] = offspring[block_idx + BLOCKSIZE * i];
+      for (size_t i = 0; i < OBJS; i++)
+        objectives_out[idx + i * POP_SIZE] = offspring_fit[block_idx + BLOCKSIZE * i];
+    }
+    else {
+      for (size_t i = 0; i < PARAMS; i++)
+        population_out[idx + i * POP_SIZE] = population_in[idx + i * POP_SIZE];
+      for (size_t i = 0; i < OBJS; i++)
+        objectives_out[idx + i * POP_SIZE] = objectives_in[idx + i * POP_SIZE];
+    }
 
 
-      if( idx == 0 && VERBOSE ) {
-        printf( "new ind: " );
-        for (size_t i = 0; i < PARAMS; i++)
-          printf( "%.2f, ", population_out[idx + i * POP_SIZE] );
-        printf( "\n" );
-        for (size_t i = 0; i < OBJS; i++)
-          printf( "%.2f, ", objectives_out[idx + i * POP_SIZE] );
-        printf( "\n" );
-      }
+    if( idx == 0 && VERBOSE ) {
+      printf( "new ind: " );
+      for (size_t i = 0; i < PARAMS; i++)
+        printf( "%.2f, ", population_out[idx + i * POP_SIZE] );
+      printf( "\n" );
+      for (size_t i = 0; i < OBJS; i++)
+        printf( "%.2f, ", objectives_out[idx + i * POP_SIZE] );
+      printf( "\n" );
+    }
 
-      *(rng_state + idx) = rng_local;
-    // }
+    *(rng_state + idx) = rng_local;
   }
 
   return;
@@ -205,12 +202,6 @@ int main( int argc, char *argv[] ) {
   }
 
   run = string("sync_") + run;
-
-  //create the streams
-  cudaStream_t stream_1;
-  cudaStream_t stream_2;
-  cudaStreamCreate(&stream_1);
-  cudaStreamCreate(&stream_2);
 
   // allocate memory
   float *population_h = (float *)malloc( POP_SIZE * PARAMS * sizeof(float) );
@@ -248,7 +239,7 @@ int main( int argc, char *argv[] ) {
   ERR( cudaEventCreate( &stop ) );
   ERR( cudaEventRecord( start, 0 ) );
 
-  // start the kernel
+  // calculate the fitness of the initial population
   dim3 dimBlock(BLOCKDIM, BLOCKDIM);
   dim3 dimGrid(ceil((POP_WIDTH + 1) / (float)BLOCKDIM) , ceil(POP_WIDTH / (float)BLOCKDIM));
   calc_fitness<<<dimGrid, dimBlock>>>( population1_d, objectives1_d );
@@ -267,8 +258,8 @@ int main( int argc, char *argv[] ) {
     if(timer_expired)
       break;
 #else
-    cout << "no valid STOPTYPE. doing just one generation." << endl;
-    {
+  cout << "no valid STOPTYPE. doing just one generation." << endl;
+  {
 #endif
     mcea<<<dimGrid, dimBlock>>>( population1_d, objectives1_d, population2_d, objectives2_d, d_state);
 
@@ -277,7 +268,7 @@ int main( int argc, char *argv[] ) {
     cudaDeviceSynchronize();
 #endif
 
-    // switch buffers
+    // switch population and objective buffers
     float *tmp = population1_d;
     population1_d = population2_d;
     population2_d = tmp;
@@ -312,4 +303,5 @@ int main( int argc, char *argv[] ) {
   ERR( cudaFree( objectives1_d ) );
   ERR( cudaFree( population2_d ) );
   ERR( cudaFree( objectives2_d ) );
+  ERR( cudaFree( d_state ) );
 }
