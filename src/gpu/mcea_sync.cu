@@ -219,8 +219,6 @@ int main( int argc, char *argv[] ) {
   float *objectives1_d;
   float *population2_d;
   float *objectives2_d;
-//  int *stopflag_h;
-//  int *stopflag_d;
   curandStatePhilox4_32_10_t *d_state;
   
   ERR( cudaMalloc( &d_state, POP_SIZE * sizeof(curandStatePhilox4_32_10_t) ) );
@@ -228,8 +226,6 @@ int main( int argc, char *argv[] ) {
   ERR( cudaMalloc( (void**)&objectives1_d, POP_SIZE * OBJS * sizeof(float) ) );
   ERR( cudaMalloc( (void**)&population2_d, POP_SIZE * PARAMS * sizeof(float) ) );
   ERR( cudaMalloc( (void**)&objectives2_d, POP_SIZE * OBJS * sizeof(float) ) );
-//  ERR( cudaMallocHost( (void**)&stopflag_h, sizeof(int) ) );
-//  ERR( cudaMalloc( (void**)&stopflag_d, sizeof(int) ) );
 
   // setup random generator
   unsigned long seed = clock();
@@ -245,8 +241,6 @@ int main( int argc, char *argv[] ) {
 
   // copy data to GPU
   ERR( cudaMemcpy( population1_d, population_h, POP_SIZE * PARAMS * sizeof(float), cudaMemcpyHostToDevice ) );
-//  *stopflag_h = 0;
-//  ERR( cudaMemcpy( stopflag_d, stopflag_h, sizeof(int), cudaMemcpyHostToDevice ) );
 
   // capture the start time
   cudaEvent_t     start, stop;
@@ -259,21 +253,29 @@ int main( int argc, char *argv[] ) {
   dim3 dimGrid(ceil((POP_WIDTH + 1) / (float)BLOCKDIM) , ceil(POP_WIDTH / (float)BLOCKDIM));
   calc_fitness<<<dimGrid, dimBlock>>>( population1_d, objectives1_d );
 
+  // main loop
+#if STOPTYPE == GENERATIONS
+  // stop after number of generations
+  for (size_t g = 0; g < STOPVALUE; g++) {
+#elif STOPTYPE == TIME
   // set the handler to stop the run
-  signal( SIGALRM, &sigalrm_handler );
-  alarm( 2 );
+  signal(SIGALRM, &sigalrm_handler);
+  alarm(STOPVALUE);
 
   // stop after timer expired
-  int count = 0; // TMP: counter for kernel calls
   while(true) {
     if(timer_expired)
       break;
-  //for (int i = 0; i < GENERATIONS; i++) {
-    mcea<<<dimGrid, dimBlock, 0, stream_1>>>( population1_d, objectives1_d, population2_d, objectives2_d, d_state);
+#else
+    cout << "no valid STOPTYPE. doing just one generation." << endl;
+    {
+#endif
+    mcea<<<dimGrid, dimBlock>>>( population1_d, objectives1_d, population2_d, objectives2_d, d_state);
 
+#if STOPTYPE == TIME
     // sync to avoid starting too many kernels
     cudaDeviceSynchronize();
-    count++; // TMP
+#endif
 
     // switch buffers
     float *tmp = population1_d;
@@ -284,16 +286,6 @@ int main( int argc, char *argv[] ) {
     objectives1_d = objectives2_d;
     objectives2_d = tmp;
   }
-
-  std::cout << "kernel calls: " << count << std::endl; // TMP
-
-//  // wait for the designated time
-//  sleep( 1 );
-//
-//  // send stop signal to gpu
-//  *stopflag_h = 1;
-//  //cudaMemcpy( variable_d, &variable_h, sizeof(int), cudaMemcpyHostToDevice );
-//  ERR( cudaMemcpyAsync( stopflag_d, stopflag_h, sizeof(int), cudaMemcpyHostToDevice, stream_2 ) );
 
   // get stop time, and display the timing results
   ERR( cudaEventRecord( stop, 0 ) );

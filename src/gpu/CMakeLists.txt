@@ -43,7 +43,7 @@ if(CUDA_FOUND)
       SET(${KEY} ${VALUE})
     ENDFOREACH()
 
-    SET(CONFIG _g${GENERATIONS}_pw${POP_WIDTH}_p${PARAMS}_r${N_RAD}_t${THREADS}_vs${VADS_SCALE}_dt${DTLZ_NUM})
+    SET(CONFIG _st${STOPTYPE}_sv${STOPVALUE}_pw${POP_WIDTH}_p${PARAMS}_r${N_RAD}_t${THREADS}_vs${VADS_SCALE}_dt${DTLZ_NUM})
     SET(OUTFILE "\"${OUTFILE}${CONFIG}\"")
 
     set(
@@ -51,7 +51,8 @@ if(CUDA_FOUND)
         -arch=sm_${MCEA_CUDA_ARCH}
         --relocatable-device-code true
         --use_fast_math
-        -DGENERATIONS=${GENERATIONS}
+        -DSTOPTYPE=${STOPTYPE}
+        -DSTOPVALUE=${STOPVALUE}
         -DPOP_WIDTH=${POP_WIDTH}
         -DPARAMS=${PARAMS}
         -DN_RAD=${N_RAD}
