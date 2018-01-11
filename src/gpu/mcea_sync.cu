@@ -17,7 +17,7 @@
 #include "../util/dtlz.h"
 #include "../util/weighting.cuh"
 #include "../util/error.h"
-#include "config.h"
+#include "../util/config.h"
 
 // global flag, used to stop calculations
 sig_atomic_t timer_expired = 0;

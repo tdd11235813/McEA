@@ -16,7 +16,7 @@
 #include "../util/dtlz.h"
 #include "../util/weighting.cuh"
 #include "../util/error.h"
-#include "config.h"
+#include "../util/config.h"
 
 /*! \brief McEA kernel
 
@@ -54,19 +54,18 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
   }
 
   // main loop
+  int g = 0;
 #if STOPTYPE == GENERATIONS
   // stop after number of generations
-  for (size_t g = 0; g < STOPVALUE; g++) {
+  for (; g < STOPVALUE; g++) {
 #elif STOPTYPE == TIME
     if(idx == 0)
       printf( "STOPTYPE: TIME is not possible for async computation. doing just one generation.\n" );
     {
-      int g = 0;
 #else
     if(idx == 0)
       printf( "no valid STOPTYPE. doing just one generation.\n" );
     {
-      int g = 0;
 #endif
 
     if( x < POP_WIDTH + 1 && y < POP_WIDTH ) {

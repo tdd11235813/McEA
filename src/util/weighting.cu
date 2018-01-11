@@ -1,8 +1,7 @@
+#include "config.h"
 #ifdef __CUDACC__
-#include "../gpu/config.h"
 #else
 #include "math.h"
-#include "../cpu/config.h"
 #include <stdio.h>
 #endif
 /*! \brief applies the weights to the given objectives

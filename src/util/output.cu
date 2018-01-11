@@ -8,7 +8,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include "../gpu/config.h"
+#include "config.h"
 
 using namespace std;
 

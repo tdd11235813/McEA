@@ -1,11 +1,10 @@
+#include "config.h"
 #ifdef __CUDACC__
-#include "../gpu/config.h"
 #include "math_constants.h"
 #include "error.h"
 #define _PI CUDART_PI_F
 
 #else
-#include "../cpu/config.h"
 #include "math.h"
 #define _PI M_PI
 

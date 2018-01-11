@@ -19,7 +19,7 @@
 #include "../util/neighbor.h"
 #include "../util/weighting.h"
 #include "../util/random.h"
-#include "config.h"
+#include "../util/config.h"
 
 using namespace std;
 
@@ -83,7 +83,6 @@ void mcea( float *population, float *objectives, default_random_engine rng_state
 #if STOPTYPE == GENERATIONS
   // stop after number of generations
   for (size_t g = 0; g < STOPVALUE; g++) {
-    if ( g%10 == 0 )
 #elif STOPTYPE == TIME
   // set the handler to stop the run
   signal(SIGALRM, &sigalrm_handler);

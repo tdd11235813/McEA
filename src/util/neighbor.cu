@@ -6,7 +6,7 @@
 #include "cuda.h"
 #endif
 
-#include "../gpu/config.h"
+#include "config.h"
 
 /*! \brief neighbor calculation
 

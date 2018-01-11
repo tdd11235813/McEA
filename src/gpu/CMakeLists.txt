@@ -30,7 +30,7 @@ if(CUDA_FOUND)
   # if c++11 or c++14 flags cause problems, try to turn this on
   # set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 
-  FILE(GLOB CONFIG_FILES "./config/*.cmake" )
+  FILE(GLOB CONFIG_FILES "../config/*.cmake" )
   FOREACH(CFILE ${CONFIG_FILES})
     FILE(READ ${CFILE} CONFIG)
     STRING(REGEX REPLACE ";" "\\\\;" CONFIG "${CONFIG}")
@@ -72,7 +72,7 @@ if(CUDA_FOUND)
         ../util/dtlz.cu
         ../util/weighting.cu
         ../util/neighbor.cu
-        config.h
+        ../util/config.h
         ../util/error.h
         ../util/dtlz.cuh
         ../util/output.cuh
@@ -89,7 +89,7 @@ if(CUDA_FOUND)
         ../util/dtlz.cu
         ../util/weighting.cu
         ../util/neighbor.cu
-        config.h
+        ../util/config.h
         ../util/error.h
         ../util/dtlz.cuh
         ../util/output.cuh
