@@ -78,7 +78,7 @@ TODO: for real world problems use the weighted tchebychev method (use utopia vec
 #ifdef __CUDACC__
 __device__
 #endif
-double weighted_fitness( float *objectives, float *weights, int offset) {
+float weighted_fitness( float *objectives, float *weights, int offset) {
 
   // normalize fitness
   float obj_length = sqrt(
@@ -97,6 +97,6 @@ double weighted_fitness( float *objectives, float *weights, int offset) {
 #else
   int weight_offset = 1;
 #endif
-  return obj_length / pow( (double)weight_multiply( weights, obj_norm, weight_offset), VADS_SCALE );
+  return obj_length / pow( (float)weight_multiply( weights, obj_norm, weight_offset), VADS_SCALE );
 }
 

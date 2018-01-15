@@ -33,9 +33,11 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
   __shared__ float offspring_fit[OBJS * BLOCKSIZE];
   __shared__ float weights[OBJS * BLOCKSIZE];
   curandStatePhilox4_32_10_t rng_local;
-  float4_union randn_neigh_1, randn_neigh_2, randn_xover_point;
-  int4_union randn_mut_count;
-  double fit_parent;
+  float4_union randn_neigh_1;
+  float4_union randn_neigh_2;
+  float4_union randn_xover_point;
+  __shared__ int4_union randn_mut_count[BLOCKSIZE];
+  float fit_parent;
 
   // global indices
   int x = threadIdx.x + blockIdx.x * blockDim.x;
@@ -76,7 +78,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
         randn_neigh_1.vec = curand_uniform4( &rng_local );
         randn_neigh_2.vec = curand_uniform4( &rng_local );
         randn_xover_point.vec = curand_uniform4( &rng_local );
-        randn_mut_count.vec = curand_poisson4( &rng_local, LAMBDA );
+        (randn_mut_count[block_idx]).vec = curand_poisson4( &rng_local, LAMBDA );
 
       }
 
@@ -86,8 +88,8 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
       int neighbor_2 = get_neighbor( x, y, trans_uniform_int( randn_neigh_2.arr[g%4], N_WIDTH * N_WIDTH ) );
 
       // compare neighbors
-      double fit_1 =  weighted_fitness( objectives + neighbor_1, weights + block_idx, POP_SIZE );
-      double fit_2 =  weighted_fitness( objectives + neighbor_2, weights + block_idx, POP_SIZE );
+      float fit_1 =  weighted_fitness( objectives + neighbor_1, weights + block_idx, POP_SIZE );
+      float fit_2 =  weighted_fitness( objectives + neighbor_2, weights + block_idx, POP_SIZE );
       int neighbor_sel = (fit_1 < fit_2)? neighbor_1 : neighbor_2;
 
       if( idx == 0 && VERBOSE )
@@ -120,7 +122,7 @@ __global__ void mcea( float *population, float *objectives, curandStatePhilox4_3
       }
       // ### mutation ###
       // == uniform mutation
-      int num_mutations = randn_mut_count.arr[g%4];
+      int num_mutations = (randn_mut_count[block_idx]).arr[g%4];
       if( idx == 0 && VERBOSE )
         printf( "mut: %d\n", num_mutations );
 

@@ -12,6 +12,6 @@ void calc_weights( int x, int y, float *weights, const int offset);
 #ifdef __CUDACC__
 __device__
 #endif
-double weighted_fitness( float *objectives, float *weights, int offset);
+float weighted_fitness( float *objectives, float *weights, int offset);
 
 #endif
